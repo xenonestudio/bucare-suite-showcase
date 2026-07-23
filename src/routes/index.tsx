@@ -59,10 +59,10 @@ function Index() {
           <header className="absolute top-0 inset-x-0 flex items-center justify-between px-6 md:px-10 py-6">
             <div className="text-display text-lg tracking-widest">BUCARE</div>
             <nav className="hidden md:flex items-center gap-8 text-sm">
-              <a href="#" className="hover:opacity-60 transition">Inicio</a>
-              <Link to="/residencias" className="hover:opacity-60 transition">Residencias</Link>
-              <a href="#" className="hover:opacity-60 transition">Servicios</a>
-              <a href="#contacto" className="hover:opacity-60 transition">Contacto</a>
+            <Link to="/" className="hover:opacity-60 transition">Inicio</Link>
+            <Link to="/residencias" className="hover:opacity-60 transition">Residencias</Link>
+            <Link to="/areas" className="hover:opacity-60 transition">Áreas</Link>
+            <a href="#contacto" className="hover:opacity-60 transition">Contacto</a>
             </nav>
             <a href="#contacto" className="flex items-center gap-2 text-sm border-b border-foreground pb-0.5">
               Reservar visita <ArrowUpRight className="w-4 h-4" />
