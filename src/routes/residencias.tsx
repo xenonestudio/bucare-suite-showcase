@@ -51,7 +51,8 @@ function Residencias() {
           <Link to="/" className="hover:opacity-60 transition">Inicio</Link>
           <Link to="/residencias" className="hover:opacity-60 transition font-medium">Residencias</Link>
           <Link to="/areas" className="hover:opacity-60 transition">Áreas</Link>
-          <a href="/#contacto" className="hover:opacity-60 transition">Contacto</a>
+          <Link to="/contacto" className="hover:opacity-60 transition">Contacto</Link>
+          <Link to="/login" className="hover:opacity-60 transition">Ingresar</Link>
         </nav>
         <Link to="/" className="flex items-center gap-2 text-sm">
           <ArrowLeft className="w-4 h-4" /> Volver

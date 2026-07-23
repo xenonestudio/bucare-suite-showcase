@@ -62,11 +62,12 @@ function Index() {
             <Link to="/" className="hover:opacity-60 transition">Inicio</Link>
             <Link to="/residencias" className="hover:opacity-60 transition">Residencias</Link>
             <Link to="/areas" className="hover:opacity-60 transition">Áreas</Link>
-            <a href="#contacto" className="hover:opacity-60 transition">Contacto</a>
+            <Link to="/contacto" className="hover:opacity-60 transition">Contacto</Link>
+            <Link to="/login" className="hover:opacity-60 transition">Ingresar</Link>
             </nav>
-            <a href="#contacto" className="flex items-center gap-2 text-sm border-b border-foreground pb-0.5">
+            <Link to="/contacto" className="flex items-center gap-2 text-sm border-b border-foreground pb-0.5">
               Reservar visita <ArrowUpRight className="w-4 h-4" />
-            </a>
+            </Link>
           </header>
 
           {/* Hero text */}
