@@ -50,6 +50,7 @@ function Residencias() {
         <nav className="hidden md:flex items-center gap-8 text-sm">
           <Link to="/" className="hover:opacity-60 transition">Inicio</Link>
           <Link to="/residencias" className="hover:opacity-60 transition font-medium">Residencias</Link>
+          <Link to="/areas" className="hover:opacity-60 transition">Áreas</Link>
           <a href="/#contacto" className="hover:opacity-60 transition">Contacto</a>
         </nav>
         <Link to="/" className="flex items-center gap-2 text-sm">
