@@ -10,12 +10,30 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResidenciasRouteImport } from './routes/residencias'
+import { Route as RegistroRouteImport } from './routes/registro'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as AreasRouteImport } from './routes/areas'
 import { Route as IndexRouteImport } from './routes/index'
 
 const ResidenciasRoute = ResidenciasRouteImport.update({
   id: '/residencias',
   path: '/residencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistroRoute = RegistroRouteImport.update({
+  id: '/registro',
+  path: '/registro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactoRoute = ContactoRouteImport.update({
+  id: '/contacto',
+  path: '/contacto',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AreasRoute = AreasRouteImport.update({
@@ -32,30 +50,55 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/areas': typeof AreasRoute
+  '/contacto': typeof ContactoRoute
+  '/login': typeof LoginRoute
+  '/registro': typeof RegistroRoute
   '/residencias': typeof ResidenciasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/areas': typeof AreasRoute
+  '/contacto': typeof ContactoRoute
+  '/login': typeof LoginRoute
+  '/registro': typeof RegistroRoute
   '/residencias': typeof ResidenciasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/areas': typeof AreasRoute
+  '/contacto': typeof ContactoRoute
+  '/login': typeof LoginRoute
+  '/registro': typeof RegistroRoute
   '/residencias': typeof ResidenciasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/areas' | '/residencias'
+  fullPaths:
+    | '/'
+    | '/areas'
+    | '/contacto'
+    | '/login'
+    | '/registro'
+    | '/residencias'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/areas' | '/residencias'
-  id: '__root__' | '/' | '/areas' | '/residencias'
+  to: '/' | '/areas' | '/contacto' | '/login' | '/registro' | '/residencias'
+  id:
+    | '__root__'
+    | '/'
+    | '/areas'
+    | '/contacto'
+    | '/login'
+    | '/registro'
+    | '/residencias'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AreasRoute: typeof AreasRoute
+  ContactoRoute: typeof ContactoRoute
+  LoginRoute: typeof LoginRoute
+  RegistroRoute: typeof RegistroRoute
   ResidenciasRoute: typeof ResidenciasRoute
 }
 
@@ -66,6 +109,27 @@ declare module '@tanstack/react-router' {
       path: '/residencias'
       fullPath: '/residencias'
       preLoaderRoute: typeof ResidenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registro': {
+      id: '/registro'
+      path: '/registro'
+      fullPath: '/registro'
+      preLoaderRoute: typeof RegistroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacto': {
+      id: '/contacto'
+      path: '/contacto'
+      fullPath: '/contacto'
+      preLoaderRoute: typeof ContactoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/areas': {
@@ -88,6 +152,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AreasRoute: AreasRoute,
+  ContactoRoute: ContactoRoute,
+  LoginRoute: LoginRoute,
+  RegistroRoute: RegistroRoute,
   ResidenciasRoute: ResidenciasRoute,
 }
 export const routeTree = rootRouteImport
