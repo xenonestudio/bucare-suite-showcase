@@ -20,22 +20,43 @@ type Model = {
   area: string;
   bedrooms: string;
   bathrooms: string;
-  description: string;
+  balcony: string;
+  distribution: string[];
   plan: string;
   render: string;
 };
 
-// TODO: reemplazar imágenes con los planos y renders reales del cliente
-const placeholder = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600";
-const placeholderPlan = "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1600";
-
 const models: Model[] = [
-  { id: "A", name: "MODELO A", area: "62 m²", bedrooms: "1 hab.", bathrooms: "1 baño", description: "Suite compacta con vista abierta y cocina integrada al salón principal.", plan: placeholderPlan, render: placeholder },
-  { id: "B", name: "MODELO B", area: "78 m²", bedrooms: "2 hab.", bathrooms: "2 baños", description: "Distribución balanceada con área social amplia y dormitorios en ala privada.", plan: placeholderPlan, render: placeholder },
-  { id: "C", name: "MODELO C", area: "94 m²", bedrooms: "2 hab.", bathrooms: "2 baños", description: "Residencia con estudio adicional y terraza continua al comedor.", plan: placeholderPlan, render: placeholder },
-  { id: "D", name: "MODELO D", area: "112 m²", bedrooms: "3 hab.", bathrooms: "2 baños", description: "Tipología familiar con cocina cerrada opcional y vestier en suite principal.", plan: placeholderPlan, render: placeholder },
-  { id: "E", name: "MODELO E", area: "138 m²", bedrooms: "3 hab.", bathrooms: "3 baños", description: "Planta amplia con doble exposición y balcón continuo en fachada.", plan: placeholderPlan, render: placeholder },
-  { id: "F", name: "PENTHOUSE", area: "196 m²", bedrooms: "4 hab.", bathrooms: "4 baños", description: "Ático de dos niveles con terraza panorámica y acceso privado por ascensor.", plan: placeholderPlan, render: placeholder },
+  { 
+    id: "01", name: "MODELO 01", area: "31.60 m²", bedrooms: "1 hab.", bathrooms: "1 baño", balcony: "Jardinera / Balcón frontal",
+    distribution: ["Acceso / Ingreso central.", "Baño completo accesible cerca de la entrada.", "Área integradora de comedor y cocina lineal.", "Habitación principal integrada con vista y salida hacia el balcón/jardinera."],
+    plan: "/modelos/mapa_modelo01.jpg", render: "/modelos/Imagen_modelo01.jpg"
+  },
+  { 
+    id: "02", name: "MODELO 02", area: "45.03 m²", bedrooms: "1 hab.", bathrooms: "1 baño", balcony: "Balcón / Área verde frontal",
+    distribution: ["Acceso / Ingreso con área de recibidor.", "Baño completo.", "Cocina en L / Comedor auxiliar circular.", "Zona de trabajo o escritorio.", "Habitación espaciosa con salida a balcón con jardines."],
+    plan: "/modelos/mapa_modelo02.jpg", render: "/modelos/Imagen_modelo02.jpg"
+  },
+  { 
+    id: "03", name: "MODELO 03", area: "56.70 m²", bedrooms: "2 hab.", bathrooms: "2 baños", balcony: "Balcón",
+    distribution: ["Ingreso a la zona social (sala de estar).", "Cocina abierta integrada con barra/comedor.", "2 habitaciones (habitación principal con baño privado y habitación secundaria).", "2 baños completos.", "Balcón continuo en la fachada posterior/lateral."],
+    plan: "/modelos/mapa_modelo03.jpg", render: "/modelos/Imagen_modelo03.jpg"
+  },
+  { 
+    id: "04", name: "MODELO 04", area: "63.23 m²", bedrooms: "2 hab.", bathrooms: "2 baños", balcony: "Balcón",
+    distribution: ["Ingreso con recibidor.", "Cocina amplia integrada a comedor central.", "Sala de estar acogedora.", "Habitación principal de gran tamaño y habitación secundaria.", "2 baños completos.", "Balcón."],
+    plan: "/modelos/mapa_modelo04.jpg", render: "/modelos/Imagen_modelo04.jpg"
+  },
+  { 
+    id: "05", name: "MODELO 05", area: "73.88 m²", bedrooms: "2 hab.", bathrooms: "2 baños", balcony: "Balcones amplios",
+    distribution: ["Acceso con área de cocina en isla / barra desayunadora y área de servicios.", "Sala de estar amplia con salida directa a amplio balcón con vegetación.", "2 habitaciones de excelente tamaño.", "2 baños completos.", "Balcones extensos con jardineras."],
+    plan: "/modelos/mapa_modelo05.jpg", render: "/modelos/Imagen_modelo05.jpg"
+  },
+  { 
+    id: "06", name: "MODELO 06", area: "86.91 m²", bedrooms: "3 hab.", bathrooms: "2 baños", balcony: "Balcones",
+    distribution: ["Es el modelo de mayor área del condominio.", "Acceso/Ingreso directo a área social con sala y amplio comedor.", "Cocina moderna en L integrando la zona social.", "3 habitaciones (habitación principal con baño suite y 2 habitaciones secundarias/estudio).", "2 baños completos.", "Múltiples balcón/jardineras que bordean los espacios principales."],
+    plan: "/modelos/mapa_modelo06.jpg", render: "/modelos/Imagen_modelo06.jpg"
+  },
 ];
 
 function Residencias() {
@@ -45,8 +66,10 @@ function Residencias() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
-      <header className="flex items-center justify-between px-6 md:px-10 py-6 border-b border-border">
-        <Link to="/" className="text-display text-lg tracking-widest">BUCARE</Link>
+      <header className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-border">
+        <Link to="/" className="flex items-center">
+          <img src="/logo.png" alt="Bucare Suite" className="h-14 md:h-20 w-auto" />
+        </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm">
           <Link to="/" className="hover:opacity-60 transition">Inicio</Link>
           <Link to="/residencias" className="hover:opacity-60 transition font-medium">Residencias</Link>
@@ -118,7 +141,7 @@ function Residencias() {
           </aside>
 
           {/* Detail */}
-          <div className="md:col-span-8 lg:col-span-9">
+          <div key={active.id} className="md:col-span-8 lg:col-span-9 animate-fade-in">
             <div className="grid md:grid-cols-2 gap-4">
               <figure className="relative overflow-hidden rounded-sm bg-muted">
                 <img
@@ -147,44 +170,57 @@ function Residencias() {
             </div>
 
             <div className="grid md:grid-cols-12 gap-6 mt-8 pt-8 border-t border-border">
-              <div className="md:col-span-5">
+              <div className="md:col-span-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
-                  Tipología {active.id}
+                  Modelo {active.id}
                 </div>
                 <h2 className="text-display text-3xl md:text-5xl uppercase">{active.name}</h2>
               </div>
-              <div className="md:col-span-4 grid grid-cols-3 gap-4">
+              <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Área</div>
-                  <div className="text-display text-xl mt-1">{active.area}</div>
+                  <div className="text-display text-xl mt-1 text-primary">{active.area}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Hab.</div>
-                  <div className="text-display text-xl mt-1">{active.bedrooms}</div>
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Habitaciones</div>
+                  <div className="text-display text-xl mt-1 text-primary">{active.bedrooms}</div>
                 </div>
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Baños</div>
-                  <div className="text-display text-xl mt-1">{active.bathrooms}</div>
+                  <div className="text-display text-xl mt-1 text-primary">{active.bathrooms}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Balcón</div>
+                  <div className="text-sm mt-1 text-primary font-medium">{active.balcony}</div>
                 </div>
               </div>
-              <p className="md:col-span-3 text-sm text-muted-foreground leading-relaxed">
-                {active.description}
-              </p>
+              
+              <div className="md:col-span-12 mt-4">
+                <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mb-3">Distribución</div>
+                <ul className="grid md:grid-cols-2 gap-x-6 gap-y-2">
+                  {active.distribution.map((item, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm text-foreground/80">
+                      <span className="text-accent mt-1">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <a
-                href="/#contacto"
-                className="inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase bg-foreground text-background px-5 py-3 rounded-sm"
+              <Link
+                to="/contacto"
+                className="inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase bg-primary text-background px-5 py-3 rounded-sm hover:bg-primary/90 transition-colors"
               >
                 Agendar visita <ArrowUpRight className="w-4 h-4" />
-              </a>
-              <a
-                href="/#contacto"
-                className="inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase border border-foreground px-5 py-3 rounded-sm"
+              </Link>
+              <Link
+                to="/contacto"
+                className="inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase border border-primary text-primary px-5 py-3 rounded-sm hover:bg-primary/10 transition-colors"
               >
                 Solicitar ficha técnica
-              </a>
+              </Link>
             </div>
           </div>
         </div>

@@ -56,8 +56,10 @@ function Index() {
           <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-transparent to-black/30" />
 
           {/* Nav overlay */}
-          <header className="absolute top-0 inset-x-0 flex items-center justify-between px-6 md:px-10 py-6">
-            <div className="text-display text-lg tracking-widest">BUCARE</div>
+          <header className="absolute top-0 inset-x-0 z-10 flex items-center justify-between px-6 md:px-10 py-4 bg-black/10 backdrop-blur-sm border-b border-white/10">
+            <Link to="/" className="flex items-center">
+              <img src="/logo.png" alt="Bucare Suite" className="h-14 md:h-20 w-auto" />
+            </Link>
             <nav className="hidden md:flex items-center gap-8 text-sm">
             <Link to="/" className="hover:opacity-60 transition">Inicio</Link>
             <Link to="/residencias" className="hover:opacity-60 transition">Residencias</Link>
@@ -73,14 +75,14 @@ function Index() {
           {/* Hero text */}
           <div className="absolute inset-0 flex flex-col justify-between px-6 md:px-14 pt-32 pb-10">
             <div className="max-w-4xl">
-              <h1 className="text-display text-[14vw] md:text-[9vw] leading-[0.9] text-foreground">
+              <h1 className="text-display text-[10vw] md:text-[5vw] leading-[0.9] text-primary animate-fade-in-up">
                 HOGARES QUE<br />TE INSPIRAN
               </h1>
-              <p className="mt-8 max-w-sm text-sm text-foreground/80">
+              <p className="mt-8 max-w-sm text-sm text-foreground/80 animate-fade-in-up delay-100">
                 Traemos estilo, serenidad y lujo a través de arquitectura inteligente en el corazón de Nueva Guayana.
               </p>
-              <a href="#residencias" className="mt-10 inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase border-b border-foreground pb-1">
-                Explorar residencias <ArrowUpRight className="w-4 h-4" />
+              <a href="#residencias" className="mt-10 inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase border-b border-foreground pb-1 animate-fade-in-up delay-200 group">
+                Explorar residencias <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </a>
             </div>
 
@@ -123,9 +125,9 @@ function Index() {
             <p className="md:col-span-3 text-xs uppercase tracking-[0.15em] text-muted-foreground leading-relaxed">
               Explora residencias completamente curadas — cuidadosamente seleccionadas, listas cuando tú lo estés.
             </p>
-            <a href="#" className="md:col-span-3 flex items-start justify-end gap-2 text-sm tracking-[0.15em] uppercase">
+            <Link to="/residencias" className="md:col-span-3 flex items-start justify-end gap-2 text-sm tracking-[0.15em] uppercase hover:opacity-70 transition-opacity">
               Ver todas las residencias <ArrowUpRight className="w-4 h-4" />
-            </a>
+            </Link>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -142,11 +144,11 @@ function Index() {
 
             <div className="grid grid-rows-2 gap-6">
               {properties.slice(1).map((p) => (
-                <div key={p.name} className="relative overflow-hidden rounded-sm group">
-                  <img src={p.img} alt={p.name} width={1000} height={700} loading="lazy" className="w-full h-[248px] object-cover group-hover:scale-[1.02] transition-transform duration-700" />
+                <div key={p.name} className="relative overflow-hidden rounded-sm group cursor-pointer">
+                  <img src={p.img} alt={p.name} width={1000} height={700} loading="lazy" className="w-full h-[248px] object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
                   <div className="absolute inset-x-0 bottom-0 p-5 flex items-end justify-between bg-gradient-to-t from-black/70 to-transparent text-background">
                     <div className="text-display text-lg uppercase tracking-wide">{p.name}</div>
-                    <ArrowUpRight className="w-5 h-5" />
+                    <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
                   </div>
                 </div>
               ))}
@@ -164,12 +166,12 @@ function Index() {
           <div className="md:col-span-7">
             {faqs.map((f, i) => (
               <details key={f.q} className="border-t border-border py-6 group" open={i===0}>
-                <summary className="flex items-start gap-6 cursor-pointer list-none">
+                <summary className="flex items-start gap-6 cursor-pointer list-none select-none">
                   <span className="text-xs text-muted-foreground mt-1 w-8">{String(i+1).padStart(2,"0")}</span>
-                  <span className="text-display text-lg md:text-xl uppercase flex-1">{f.q}</span>
-                  <span className="text-xl group-open:rotate-45 transition-transform">+</span>
+                  <span className="text-display text-lg md:text-xl uppercase flex-1 group-hover:text-primary transition-colors">{f.q}</span>
+                  <span className="text-xl group-open:rotate-45 transition-transform duration-300 ease-out shrink-0">+</span>
                 </summary>
-                <p className="mt-4 pl-14 pr-8 text-sm text-muted-foreground leading-relaxed max-w-2xl">{f.a}</p>
+                <p className="mt-4 pl-14 pr-8 text-sm text-muted-foreground leading-relaxed max-w-2xl animate-fade-in">{f.a}</p>
               </details>
             ))}
             <div className="border-t border-border" />
@@ -182,12 +184,12 @@ function Index() {
         <div className="grid md:grid-cols-12 gap-10">
           <div className="md:col-span-6">
             <div className="text-xs tracking-[0.2em] uppercase opacity-60 mb-6">Visítanos</div>
-            <h3 className="text-display text-4xl md:text-6xl uppercase leading-none">
+            <h3 className="text-display text-4xl md:text-6xl uppercase leading-none text-background">
               Bucare Suite<br />Nueva Guayana
             </h3>
-            <a href="#" className="mt-8 inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase border-b border-background pb-1">
+            <Link to="/contacto" className="mt-8 inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase border-b border-background pb-1 hover:opacity-80 transition-opacity">
               Reservar una visita <ArrowUpRight className="w-4 h-4" />
-            </a>
+            </Link>
           </div>
           <div className="md:col-span-3 text-sm space-y-2">
             <div className="text-xs uppercase tracking-[0.15em] opacity-60 mb-3">Dirección</div>
@@ -198,7 +200,7 @@ function Index() {
           <div className="md:col-span-3 text-sm space-y-2">
             <div className="text-xs uppercase tracking-[0.15em] opacity-60 mb-3">Contacto</div>
             <p>hola@bucaresuite.com</p>
-            <p>+58 (000) 000 0000</p>
+            <p>0424 283 1342</p>
             <p className="opacity-60 pt-6">© 2026 Bucare Suite</p>
           </div>
         </div>

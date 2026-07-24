@@ -20,7 +20,9 @@ function Registro() {
       {/* Left: form */}
       <div className="flex flex-col px-6 md:px-14 py-8 md:py-14 md:order-1">
         <div className="flex items-center justify-between">
-          <Link to="/" className="md:hidden text-display text-lg tracking-widest">BUCARE</Link>
+          <Link to="/" className="md:hidden flex items-center">
+            <img src="/logo.png" alt="Bucare Suite" className="h-10 w-auto" />
+          </Link>
           <Link to="/" className="ml-auto flex items-center gap-2 text-sm">
             <ArrowLeft className="w-4 h-4" /> Volver
           </Link>

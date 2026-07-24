@@ -22,7 +22,9 @@ function Login() {
         <img src={heroBuilding} alt="Bucare Suite" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/30" />
         <div className="relative h-full flex flex-col justify-between p-10 text-white">
-          <Link to="/" className="text-display text-lg tracking-widest">BUCARE</Link>
+          <Link to="/" className="flex items-center">
+            <img src="/logo.png" alt="Bucare Suite" className="h-10 md:h-14 w-auto brightness-0 invert" />
+          </Link>
           <div>
             <div className="text-[11px] tracking-[0.2em] uppercase opacity-80 mb-3">Portal privado</div>
             <h2 className="text-display text-4xl uppercase leading-[0.95] max-w-sm">
@@ -35,7 +37,9 @@ function Login() {
       {/* Right: form */}
       <div className="flex flex-col px-6 md:px-14 py-8 md:py-14">
         <div className="flex items-center justify-between">
-          <Link to="/" className="md:hidden text-display text-lg tracking-widest">BUCARE</Link>
+          <Link to="/" className="md:hidden flex items-center">
+            <img src="/logo.png" alt="Bucare Suite" className="h-10 w-auto" />
+          </Link>
           <Link to="/" className="ml-auto flex items-center gap-2 text-sm">
             <ArrowLeft className="w-4 h-4" /> Volver
           </Link>
@@ -61,7 +65,7 @@ function Login() {
 
             <button
               type="submit"
-              className="w-full bg-foreground text-background py-4 text-sm tracking-[0.15em] uppercase hover:opacity-90 transition"
+              className="w-full bg-primary text-background py-4 text-sm tracking-[0.15em] uppercase hover:bg-primary/90 transition-colors"
             >
               Ingresar
             </button>

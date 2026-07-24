@@ -29,14 +29,14 @@ const areas: Area[] = [
     name: "Coworking",
     description: "Espacio de trabajo compartido con iluminación natural, conectividad de alta velocidad y cabinas para videollamadas.",
     span: "md:col-span-4 md:row-span-2",
-    img: placeholder,
+    img: "/areas/Coworking.jpg",
   },
   {
     id: "plaza",
     name: "Plaza",
     description: "Plaza central paisajística con vegetación local, bancas y zonas de descanso al aire libre.",
     span: "md:col-span-4",
-    img: placeholder,
+    img: "/areas/Plaza.jpg",
   },
   {
     id: "lobby",
@@ -50,21 +50,21 @@ const areas: Area[] = [
     name: "Entrada",
     description: "Acceso peatonal y vehicular con porte cochere, control de acceso y seguridad las 24 horas.",
     span: "md:col-span-4",
-    img: placeholder,
+    img: "/areas/Entrada.jpg",
   },
   {
     id: "gym",
     name: "Gym",
     description: "Gimnasio equipado con máquinas de cardio, pesas libres y zona funcional para entrenamiento completo.",
     span: "md:col-span-4",
-    img: placeholder,
+    img: "/areas/Gym.jpg",
   },
   {
     id: "terraza",
     name: "Terraza social",
     description: "Rooftop con vistas a la ciudad, zona de lounge, barra gourmet y espacio para eventos sociales.",
     span: "md:col-span-4 md:row-span-2",
-    img: placeholder,
+    img: "/areas/Terraza Social.jpg",
   },
 ];
 
@@ -72,8 +72,10 @@ function Areas() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
-      <header className="flex items-center justify-between px-6 md:px-10 py-6 border-b border-border">
-        <Link to="/" className="text-display text-lg tracking-widest">BUCARE</Link>
+      <header className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-border">
+        <Link to="/" className="flex items-center">
+          <img src="/logo.png" alt="Bucare Suite" className="h-14 md:h-20 w-auto" />
+        </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm">
           <Link to="/" className="hover:opacity-60 transition">Inicio</Link>
           <Link to="/residencias" className="hover:opacity-60 transition">Residencias</Link>
@@ -148,12 +150,12 @@ function Areas() {
               Agenda una visita privada y recorre cada una de las áreas comunes de Bucare Suite.
             </p>
           </div>
-          <a
-            href="/#contacto"
-            className="inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase bg-foreground text-background px-5 py-3 rounded-sm"
+          <Link
+            to="/contacto"
+            className="inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase bg-primary text-background px-5 py-3 rounded-sm hover:bg-primary/90 transition-colors"
           >
             Reservar visita <ArrowUpRight className="w-4 h-4" />
-          </a>
+          </Link>
         </div>
       </section>
     </div>

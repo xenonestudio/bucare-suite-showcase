@@ -5,6 +5,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
@@ -14,12 +15,13 @@
 }
 
 :root {
-  --background: #fefefe;
-  --foreground: #080808;
-  --muted: #f4f4f4;
-  --muted-foreground: #707070;
-  --border: #e5e5e5;
-  --accent: #080808;
+  --background: #F5F2EC;
+  --foreground: #202020;
+  --primary: #213B26;
+  --muted: #EFEBE1;
+  --muted-foreground: #8B9983;
+  --border: #A39B93;
+  --accent: #E1B668;
 }
 
 @layer base {
@@ -35,6 +37,7 @@
   h1, h2, h3, h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+    color: var(--color-primary);
   }
 }
 
@@ -43,4 +46,59 @@
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 0.95;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@utility animate-fade-in-up {
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-scale-in {
+  animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility delay-100 {
+  animation-delay: 100ms;
+}
+
+@utility delay-200 {
+  animation-delay: 200ms;
+}
+
+@utility delay-300 {
+  animation-delay: 300ms;
 }

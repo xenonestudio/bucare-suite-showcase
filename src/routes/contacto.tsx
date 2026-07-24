@@ -19,8 +19,10 @@ function Contacto() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="flex items-center justify-between px-6 md:px-10 py-6 border-b border-border">
-        <Link to="/" className="text-display text-lg tracking-widest">BUCARE</Link>
+      <header className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-border">
+        <Link to="/" className="flex items-center">
+          <img src="/logo.png" alt="Bucare Suite" className="h-14 md:h-20 w-auto" />
+        </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm">
           <Link to="/" className="hover:opacity-60 transition">Inicio</Link>
           <Link to="/residencias" className="hover:opacity-60 transition">Residencias</Link>
@@ -62,7 +64,7 @@ function Contacto() {
               <Phone className="w-4 h-4 mt-1 shrink-0" />
               <div>
                 <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground mb-1">Teléfono</div>
-                +58 000 000 0000
+                0424 283 1342
               </div>
             </div>
             <div className="flex items-start gap-4">
@@ -99,7 +101,7 @@ function Contacto() {
 
               <Field label="Nombre completo" name="name" placeholder="Tu nombre" required />
               <Field label="Email" name="email" type="email" placeholder="tu@email.com" required />
-              <Field label="Teléfono" name="phone" placeholder="+58 000 000 0000" />
+              <Field label="Teléfono" name="phone" placeholder="0424 283 1342" />
 
               <div>
                 <label className="block text-[11px] tracking-[0.2em] uppercase text-muted-foreground mb-2">Interés</label>
@@ -122,9 +124,9 @@ function Contacto() {
 
               <button
                 type="submit"
-                className="flex items-center gap-2 text-sm border-b border-foreground pb-0.5"
+                className="inline-flex items-center gap-2 text-sm bg-primary text-background px-6 py-3 rounded-sm hover:bg-primary/90 active:scale-[0.98] transition-all duration-200 group"
               >
-                Enviar mensaje <ArrowUpRight className="w-4 h-4" />
+                Enviar mensaje <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </button>
             </form>
           )}
