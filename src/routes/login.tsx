@@ -16,56 +16,56 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   return (
-    <div className="min-h-screen grid md:grid-cols-2 bg-background text-foreground">
-      {/* Left: visual */}
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-background text-foreground">
+      {/* Left: Visual background (hidden on small screens) */}
       <div className="relative hidden md:block overflow-hidden">
         <img src={heroBuilding} alt="Bucare Suite" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black/40" />
         <div className="relative h-full flex flex-col justify-between p-10 text-white">
           <Link to="/" className="flex items-center">
-            <img src="/logo.png" alt="Bucare Suite" className="h-10 md:h-14 w-auto brightness-0 invert" />
+            <img src="/logo.png" alt="Bucare Suite" className="h-12 w-auto brightness-200" />
           </Link>
           <div>
-            <div className="text-[11px] tracking-[0.2em] uppercase opacity-80 mb-3">Portal privado</div>
-            <h2 className="text-display text-4xl uppercase leading-[0.95] max-w-sm">
+            <div className="text-[11px] tracking-[0.2em] uppercase opacity-80 mb-2 font-semibold">Portal privado</div>
+            <h2 className="text-display text-4xl uppercase leading-[0.95] max-w-sm font-bold">
               Bienvenido<br />de vuelta
             </h2>
           </div>
         </div>
       </div>
 
-      {/* Right: form */}
-      <div className="flex flex-col px-6 md:px-14 py-8 md:py-14">
+      {/* Right: Form Container */}
+      <div className="flex flex-col px-5 sm:px-8 md:px-14 py-6 sm:py-10 md:py-14 justify-between">
         <div className="flex items-center justify-between">
           <Link to="/" className="md:hidden flex items-center">
             <img src="/logo.png" alt="Bucare Suite" className="h-10 w-auto" />
           </Link>
-          <Link to="/" className="ml-auto flex items-center gap-2 text-sm">
-            <ArrowLeft className="w-4 h-4" /> Volver
+          <Link to="/" className="ml-auto inline-flex items-center gap-2 text-xs sm:text-sm font-medium hover:opacity-75 transition-opacity">
+            <ArrowLeft className="w-4 h-4" /> Volver al inicio
           </Link>
         </div>
 
-        <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
-          <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground mb-4">Ingresar</div>
-          <h1 className="text-display text-4xl md:text-5xl uppercase leading-[0.95] mb-10">
+        <div className="my-auto py-8 max-w-md mx-auto w-full">
+          <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-3">Acceso seguro</div>
+          <h1 className="text-display text-3xl sm:text-4xl md:text-5xl uppercase leading-[0.95] font-bold mb-8 sm:mb-10">
             Accede a<br />tu cuenta
           </h1>
 
           <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-            <Field label="Email" name="email" type="email" placeholder="tu@email.com" />
+            <Field label="Correo electrónico" name="email" type="email" placeholder="tu@email.com" />
             <Field label="Contraseña" name="password" type="password" placeholder="••••••••" />
 
             <div className="flex items-center justify-between text-xs">
-              <label className="flex items-center gap-2 text-muted-foreground">
-                <input type="checkbox" className="accent-foreground" />
+              <label className="flex items-center gap-2 text-muted-foreground cursor-pointer">
+                <input type="checkbox" className="accent-primary rounded-xs" />
                 Recordarme
               </label>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition">¿Olvidaste tu contraseña?</a>
+              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">¿Olvidaste tu contraseña?</a>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-primary text-background py-4 text-sm tracking-[0.15em] uppercase hover:bg-primary/90 transition-colors"
+              className="w-full bg-primary text-primary-foreground py-3.5 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase rounded-md hover:opacity-90 transition-opacity shadow-sm"
             >
               Ingresar
             </button>
@@ -75,12 +75,16 @@ function Login() {
             <span className="flex-1 h-px bg-border" /> o <span className="flex-1 h-px bg-border" />
           </div>
 
-          <p className="text-sm text-muted-foreground">
-            ¿No tienes cuenta?{" "}
-            <Link to="/registro" className="text-foreground inline-flex items-center gap-1 border-b border-foreground pb-0.5">
+          <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+            ¿No tienes una cuenta aún?{" "}
+            <Link to="/registro" className="text-foreground font-semibold inline-flex items-center gap-1 border-b border-foreground pb-0.5 hover:opacity-75">
               Crear cuenta <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </p>
+        </div>
+
+        <div className="text-center text-[10px] uppercase tracking-widest text-muted-foreground">
+          © 2026 Bucare Suite — Todos los derechos reservados
         </div>
       </div>
     </div>
@@ -92,7 +96,7 @@ function Field({ label, name, type = "text", placeholder }: {
 }) {
   return (
     <div>
-      <label htmlFor={name} className="block text-[11px] tracking-[0.2em] uppercase text-muted-foreground mb-2">
+      <label htmlFor={name} className="block text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-2">
         {label}
       </label>
       <input
@@ -100,7 +104,7 @@ function Field({ label, name, type = "text", placeholder }: {
         name={name}
         type={type}
         placeholder={placeholder}
-        className="w-full bg-transparent border-b border-border py-3 text-sm focus:outline-none focus:border-foreground placeholder:text-muted-foreground/60"
+        className="w-full bg-transparent border-b border-border py-3 text-xs sm:text-sm focus:outline-none focus:border-foreground placeholder:text-muted-foreground/60"
       />
     </div>
   );

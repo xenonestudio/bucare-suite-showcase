@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, ArrowLeft } from "lucide-react";
+import { ArrowUpRight, Check, Eye } from "lucide-react";
 import { useState } from "react";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 export const Route = createFileRoute("/residencias")({
   head: () => ({
@@ -61,55 +63,63 @@ const models: Model[] = [
 
 function Residencias() {
   const [activeId, setActiveId] = useState(models[0].id);
+  const [viewTab, setViewTab] = useState<"both" | "render" | "plan">("both");
   const active = models.find((m) => m.id === activeId) ?? models[0];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Top bar */}
-      <header className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-border">
-        <Link to="/" className="flex items-center">
-          <img src="/logo.png" alt="Bucare Suite" className="h-14 md:h-20 w-auto" />
-        </Link>
-        <nav className="hidden md:flex items-center gap-8 text-sm">
-          <Link to="/" className="hover:opacity-60 transition">Inicio</Link>
-          <Link to="/residencias" className="hover:opacity-60 transition font-medium">Residencias</Link>
-          <Link to="/areas" className="hover:opacity-60 transition">Áreas</Link>
-          <Link to="/contacto" className="hover:opacity-60 transition">Contacto</Link>
-          <Link to="/login" className="hover:opacity-60 transition">Ingresar</Link>
-        </nav>
-        <Link to="/" className="flex items-center gap-2 text-sm">
-          <ArrowLeft className="w-4 h-4" /> Volver
-        </Link>
-      </header>
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <Navbar />
 
       {/* Meta strip */}
-      <div className="hidden md:flex items-center justify-between px-10 py-4 text-[11px] tracking-[0.2em] uppercase text-muted-foreground border-b border-border">
+      <div className="hidden md:flex items-center justify-between px-10 py-3 text-[11px] tracking-[0.2em] uppercase text-muted-foreground border-b border-border/40">
         <span>Residencias</span>
         <span>6 tipologías disponibles</span>
         <span>QQJC+93C San Cristóbal</span>
       </div>
 
-      {/* Title */}
-      <section className="px-6 md:px-10 py-12 md:py-20">
-        <div className="grid md:grid-cols-12 gap-8">
-          <h1 className="md:col-span-8 text-display text-4xl md:text-7xl uppercase leading-[0.9]">
+      {/* Header section */}
+      <section className="px-5 sm:px-8 md:px-10 py-8 sm:py-12 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-end">
+          <h1 className="md:col-span-8 text-display text-3xl sm:text-5xl md:text-7xl uppercase leading-[0.95] font-bold">
             Seis formas<br />de vivir Bucare
           </h1>
-          <p className="md:col-span-4 text-sm text-muted-foreground self-end max-w-sm">
+          <p className="md:col-span-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
             Cada modelo está pensado para un ritmo de vida distinto. Selecciona una tipología para conocer su plano y ver cómo se materializa.
           </p>
         </div>
       </section>
 
       {/* Split screen: sidebar + detail */}
-      <section className="px-4 md:px-10 pb-24">
-        <div className="grid md:grid-cols-12 gap-6 border-t border-border pt-6">
-          {/* Sidebar model selector */}
+      <section className="px-4 sm:px-6 md:px-10 pb-16 sm:pb-24 flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 border-t border-border pt-6">
+          {/* Horizontal scrollable model selector on mobile, vertical list on desktop */}
           <aside className="md:col-span-4 lg:col-span-3">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-4">
-              Modelos
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3 font-semibold">
+              Modelos disponibles
             </div>
-            <ul className="flex flex-col">
+
+            {/* Mobile horizontal scroll tabs */}
+            <div className="flex md:hidden overflow-x-auto gap-2 pb-4 scrollbar-none snap-x">
+              {models.map((m) => {
+                const isActive = m.id === activeId;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setActiveId(m.id)}
+                    className={`snap-start shrink-0 px-4 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all border ${
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-muted text-muted-foreground border-border"
+                    }`}
+                  >
+                    {m.name} ({m.bedrooms})
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Desktop vertical list */}
+            <ul className="hidden md:flex flex-col">
               {models.map((m, i) => {
                 const isActive = m.id === activeId;
                 return (
@@ -117,19 +127,19 @@ function Residencias() {
                     <button
                       onClick={() => setActiveId(m.id)}
                       className={`w-full text-left flex items-start gap-4 py-4 border-t border-border transition-colors ${
-                        isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                        isActive ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <span className="text-xs mt-1 w-8 shrink-0">
+                      <span className="text-xs mt-1 w-6 shrink-0">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="text-display text-lg uppercase block">{m.name}</span>
+                        <span className="text-display text-base lg:text-lg uppercase block">{m.name}</span>
                         <span className="text-xs opacity-70">{m.area} · {m.bedrooms}</span>
                       </span>
                       <ArrowUpRight
                         className={`w-4 h-4 mt-1 transition-transform ${
-                          isActive ? "rotate-0" : "-rotate-45 opacity-50"
+                          isActive ? "rotate-0 text-primary" : "-rotate-45 opacity-50"
                         }`}
                       />
                     </button>
@@ -140,67 +150,105 @@ function Residencias() {
             </ul>
           </aside>
 
-          {/* Detail */}
+          {/* Detail View */}
           <div key={active.id} className="md:col-span-8 lg:col-span-9 animate-fade-in">
-            <div className="grid md:grid-cols-2 gap-4">
-              <figure className="relative overflow-hidden rounded-sm bg-muted">
-                <img
-                  src={active.render}
-                  alt={`Render ${active.name}`}
-                  width={1600}
-                  height={1200}
-                  className="w-full h-[420px] md:h-[560px] object-cover"
-                />
-                <figcaption className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.2em] bg-background/85 px-2 py-1 rounded-sm">
-                  Render
-                </figcaption>
-              </figure>
-              <figure className="relative overflow-hidden rounded-sm bg-muted">
-                <img
-                  src={active.plan}
-                  alt={`Plano ${active.name}`}
-                  width={1600}
-                  height={1200}
-                  className="w-full h-[420px] md:h-[560px] object-contain bg-white"
-                />
-                <figcaption className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.2em] bg-background/85 px-2 py-1 rounded-sm">
-                  Plano
-                </figcaption>
-              </figure>
+            {/* View Mode Switcher for small screens */}
+            <div className="flex md:hidden items-center justify-center gap-2 mb-4 bg-muted/60 p-1 rounded-md">
+              <button
+                onClick={() => setViewTab("both")}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-sm transition-colors ${
+                  viewTab === "both" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Ambos
+              </button>
+              <button
+                onClick={() => setViewTab("render")}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-sm transition-colors ${
+                  viewTab === "render" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Render
+              </button>
+              <button
+                onClick={() => setViewTab("plan")}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-sm transition-colors ${
+                  viewTab === "plan" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Plano
+              </button>
             </div>
 
-            <div className="grid md:grid-cols-12 gap-6 mt-8 pt-8 border-t border-border">
+            {/* Images Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(viewTab === "both" || viewTab === "render") && (
+                <figure className="relative overflow-hidden rounded-md bg-muted border border-border">
+                  <img
+                    src={active.render}
+                    alt={`Render ${active.name}`}
+                    width={1600}
+                    height={1200}
+                    className="w-full h-[280px] sm:h-[380px] md:h-[500px] object-cover"
+                  />
+                  <figcaption className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.2em] bg-background/90 font-semibold px-2.5 py-1 rounded-xs shadow-xs">
+                    Render Arquitectónico
+                  </figcaption>
+                </figure>
+              )}
+
+              {(viewTab === "both" || viewTab === "plan") && (
+                <figure className="relative overflow-hidden rounded-md bg-white border border-border">
+                  <img
+                    src={active.plan}
+                    alt={`Plano ${active.name}`}
+                    width={1600}
+                    height={1200}
+                    className="w-full h-[280px] sm:h-[380px] md:h-[500px] object-contain p-2"
+                  />
+                  <figcaption className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.2em] bg-background/90 text-foreground font-semibold px-2.5 py-1 rounded-xs shadow-xs border border-border">
+                    Plano de Distribución
+                  </figcaption>
+                </figure>
+              )}
+            </div>
+
+            {/* Specs & Description */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-8 pt-8 border-t border-border">
               <div className="md:col-span-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
-                  Modelo {active.id}
+                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1 font-medium">
+                  Tipología {active.id}
                 </div>
-                <h2 className="text-display text-3xl md:text-5xl uppercase">{active.name}</h2>
+                <h2 className="text-display text-2xl sm:text-4xl uppercase font-bold">{active.name}</h2>
               </div>
-              <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+
+              <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-muted/30 p-4 rounded-md border border-border/50">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Área</div>
-                  <div className="text-display text-xl mt-1 text-primary">{active.area}</div>
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Área</div>
+                  <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{active.area}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Habitaciones</div>
-                  <div className="text-display text-xl mt-1 text-primary">{active.bedrooms}</div>
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Habitaciones</div>
+                  <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{active.bedrooms}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Baños</div>
-                  <div className="text-display text-xl mt-1 text-primary">{active.bathrooms}</div>
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Baños</div>
+                  <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{active.bathrooms}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Balcón</div>
-                  <div className="text-sm mt-1 text-primary font-medium">{active.balcony}</div>
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Balcón</div>
+                  <div className="text-xs sm:text-sm mt-0.5 text-primary font-semibold">{active.balcony}</div>
                 </div>
               </div>
-              
+
               <div className="md:col-span-12 mt-4">
-                <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mb-3">Distribución</div>
-                <ul className="grid md:grid-cols-2 gap-x-6 gap-y-2">
+                <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3 font-semibold">
+                  Distribución Interna
+                </div>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {active.distribution.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-foreground/80">
-                      <span className="text-accent mt-1">•</span>
+                    <li key={index} className="flex items-start gap-2.5 text-xs sm:text-sm text-foreground/90 bg-background p-2.5 rounded-sm border border-border/40">
+                      <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -208,23 +256,26 @@ function Residencias() {
               </div>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            {/* Action Buttons */}
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <Link
                 to="/contacto"
-                className="inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase bg-primary text-background px-5 py-3 rounded-sm hover:bg-primary/90 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase bg-primary text-primary-foreground px-6 py-3.5 rounded-md hover:opacity-90 transition-opacity"
               >
                 Agendar visita <ArrowUpRight className="w-4 h-4" />
               </Link>
               <Link
                 to="/contacto"
-                className="inline-flex items-center gap-2 text-sm tracking-[0.15em] uppercase border border-primary text-primary px-5 py-3 rounded-sm hover:bg-primary/10 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase border border-border hover:bg-accent px-6 py-3.5 rounded-md transition-colors"
               >
-                Solicitar ficha técnica
+                Solicitar información
               </Link>
             </div>
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }
