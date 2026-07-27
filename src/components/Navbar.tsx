@@ -39,8 +39,8 @@ export function Navbar({ transparent = false }: NavbarProps) {
     <header
       className={`w-full z-40 transition-all duration-300 ${
         transparent
-          ? "absolute top-0 inset-x-0 bg-neutral-950/60 backdrop-blur-lg text-[#f5f2ec] border-b border-white/15"
-          : "relative bg-neutral-950/95 backdrop-blur-xl border-b border-neutral-800 text-[#f5f2ec] shadow-md"
+          ? "absolute top-0 inset-x-0 bg-neutral-950/40 backdrop-blur-md text-[#f5f2ec] border-b border-white/10"
+          : "relative bg-neutral-900/90 backdrop-blur-xl border-b border-neutral-800 text-[#f5f2ec] shadow-md"
       }`}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 sm:px-8 md:px-10 py-4 md:py-5">
