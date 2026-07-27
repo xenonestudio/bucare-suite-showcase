@@ -49,7 +49,7 @@ export function Navbar({ transparent = false }: NavbarProps) {
           <img
             src="/logo.png"
             alt="Bucare Suite"
-            className="h-11 sm:h-13 md:h-15 w-auto transition-transform duration-300 group-hover:scale-105 brightness-200"
+            className="h-11 sm:h-13 md:h-15 w-auto transition-transform duration-300 group-hover:scale-105 brightness-0 invert"
           />
         </Link>
 
@@ -111,7 +111,7 @@ export function Navbar({ transparent = false }: NavbarProps) {
           {/* Mobile Drawer Top */}
           <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
             <Link to="/" className="flex items-center" onClick={() => setIsOpen(false)}>
-              <img src="/logo.png" alt="Bucare Suite" className="h-10 w-auto brightness-200" />
+              <img src="/logo.png" alt="Bucare Suite" className="h-10 w-auto brightness-0 invert" />
             </Link>
             <button
               onClick={() => setIsOpen(false)}

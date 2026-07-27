@@ -9,7 +9,7 @@ export function Footer() {
           {/* Brand */}
           <div className="sm:col-span-2 md:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <img src="/logo.png" alt="Bucare Suite" className="h-12 w-auto brightness-200" />
+              <img src="/logo.png" alt="Bucare Suite" className="h-12 w-auto brightness-0 invert" />
             </Link>
             <p className="text-xs text-neutral-400 leading-relaxed max-w-xs">
               Residencias contemporáneas de alta gama en San Cristóbal, Nueva Guayana. Arquitectura inteligente y serenidad atemporal.
