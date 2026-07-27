@@ -8,22 +8,7 @@ interface NavbarProps {
 
 export function Navbar({ transparent = false }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-
-  // Handle scroll detection for sticky background transition
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -50,15 +35,12 @@ export function Navbar({ transparent = false }: NavbarProps) {
     { name: "Ingresar", href: "/login" },
   ];
 
-  // Dynamic header styles based on transparent prop & scroll state
-  const isOverlayTransparent = transparent && !scrolled;
-
   return (
     <header
-      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        isOverlayTransparent
+      className={`w-full z-40 transition-colors ${
+        transparent
           ? "absolute top-0 inset-x-0 bg-black/70 backdrop-blur-md text-[#f5f2ec] border-b border-white/20 shadow-lg"
-          : "bg-neutral-950/95 backdrop-blur-xl border-b border-neutral-800 text-[#f5f2ec] shadow-md"
+          : "relative bg-neutral-950 text-[#f5f2ec] border-b border-neutral-800 shadow-md"
       }`}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 md:px-10 py-3 sm:py-4">
