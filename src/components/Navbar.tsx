@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, X, Phone } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface NavbarProps {
@@ -8,14 +8,29 @@ interface NavbarProps {
 
 export function Navbar({ transparent = false }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
 
-  // Close menu on route change
+  // Handle scroll detection for sticky background transition
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close mobile drawer on route change
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
 
-  // Prevent scrolling when mobile menu is open
+  // Lock scroll when mobile menu is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -35,104 +50,155 @@ export function Navbar({ transparent = false }: NavbarProps) {
     { name: "Ingresar", href: "/login" },
   ];
 
+  // Dynamic header styles based on transparent prop & scroll state
+  const isOverlayTransparent = transparent && !scrolled;
+
   return (
     <header
-      className={`w-full z-40 transition-colors ${
-        transparent
-          ? "absolute top-0 inset-x-0 bg-gradient-to-b from-black/50 via-black/20 to-transparent text-white border-b border-white/10"
-          : "relative bg-background border-b border-border text-foreground"
+      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+        isOverlayTransparent
+          ? "absolute top-0 inset-x-0 bg-gradient-to-b from-black/70 via-black/30 to-transparent text-white border-b border-white/10"
+          : "bg-background/90 backdrop-blur-xl border-b border-border/60 text-foreground shadow-sm"
       }`}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 md:px-10 py-3 md:py-4">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 md:px-10 py-3 sm:py-4">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center group">
+        <Link to="/" className="flex items-center group gap-3">
           <img
             src="/logo.png"
             alt="Bucare Suite"
-            className="h-12 sm:h-14 md:h-16 w-auto transition-transform group-hover:scale-105"
+            className={`h-10 sm:h-12 md:h-14 w-auto transition-transform duration-300 group-hover:scale-105 ${
+              isOverlayTransparent ? "brightness-200" : ""
+            }`}
           />
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+        {/* Desktop Navigation Links */}
+        <nav className="hidden md:flex items-center gap-1 bg-neutral-500/10 dark:bg-white/5 backdrop-blur-md p-1.5 rounded-full border border-border/30">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.href;
             return (
               <Link
                 key={link.href}
                 to={link.href}
-                className={`transition-opacity hover:opacity-75 relative py-1 ${
-                  isActive ? "font-semibold opacity-100" : "opacity-80"
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                  isActive
+                    ? isOverlayTransparent
+                      ? "bg-white text-neutral-950 shadow-sm"
+                      : "bg-primary text-primary-foreground shadow-sm"
+                    : isOverlayTransparent
+                    ? "text-white/90 hover:text-white hover:bg-white/10"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted"
                 }`}
               >
                 {link.name}
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                )}
               </Link>
             );
           })}
         </nav>
 
-        {/* CTA & Mobile Toggle */}
-        <div className="flex items-center gap-4">
-          <Link
-            to="/contacto"
-            className={`hidden sm:inline-flex items-center gap-2 text-xs sm:text-sm font-medium border-b pb-0.5 transition-colors ${
-              transparent
-                ? "border-white hover:border-white/70 text-white"
-                : "border-foreground hover:border-foreground/70 text-foreground"
+        {/* CTA Button & Mobile Toggle */}
+        <div className="flex items-center gap-3">
+          <a
+            href="tel:+584242831342"
+            className={`hidden lg:flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+              isOverlayTransparent
+                ? "border-white/20 text-white/90 hover:bg-white/10"
+                : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
           >
-            Reservar visita <ArrowUpRight className="w-4 h-4" />
+            <Phone className="w-3.5 h-3.5 text-primary" />
+            <span>0424 283 1342</span>
+          </a>
+
+          <Link
+            to="/contacto"
+            className={`hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] group ${
+              isOverlayTransparent
+                ? "bg-white text-neutral-950 hover:bg-neutral-100"
+                : "bg-primary text-primary-foreground hover:opacity-95"
+            }`}
+          >
+            <span>Reservar Visita</span>
+            <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </Link>
 
-          {/* Hamburger button */}
+          {/* Mobile Hamburger Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-md transition-colors hover:bg-white/10 focus:outline-none"
-            aria-label="Abrir menú"
+            className={`md:hidden p-2.5 rounded-full transition-all focus:outline-none border ${
+              isOverlayTransparent
+                ? "bg-black/30 border-white/20 text-white hover:bg-white/20"
+                : "bg-muted border-border text-foreground hover:bg-muted/80"
+            }`}
+            aria-label="Toggle navigation menu"
           >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
       {/* Mobile Drawer Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 top-[60px] z-50 bg-background/95 backdrop-blur-md flex flex-col justify-between px-6 py-8 md:hidden animate-fade-in text-foreground">
-          <div className="flex flex-col gap-6">
-            <span className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground border-b border-border pb-2">
-              Navegación
+        <div className="fixed inset-0 top-0 z-50 bg-background/98 backdrop-blur-2xl flex flex-col justify-between px-6 py-6 md:hidden animate-fade-in text-foreground">
+          {/* Mobile Drawer Top */}
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <Link to="/" className="flex items-center" onClick={() => setIsOpen(false)}>
+              <img src="/logo.png" alt="Bucare Suite" className="h-10 w-auto" />
+            </Link>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-2 rounded-full bg-muted border border-border text-foreground"
+              aria-label="Cerrar menú"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="flex flex-col gap-6 my-auto py-6">
+            <span className="text-[11px] tracking-[0.25em] uppercase text-muted-foreground font-semibold">
+              Menú Principal
             </span>
-            <nav className="flex flex-col gap-5 text-2xl font-serif">
-              {navLinks.map((link) => {
+            <nav className="flex flex-col gap-3">
+              {navLinks.map((link, index) => {
                 const isActive = location.pathname === link.href;
                 return (
                   <Link
                     key={link.href}
                     to={link.href}
-                    className={`flex items-center justify-between py-2 border-b border-border/40 transition-colors ${
-                      isActive ? "text-primary font-bold" : "text-foreground/90"
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary font-bold shadow-sm"
+                        : "bg-muted/40 border-border/50 text-foreground hover:bg-muted font-medium"
                     }`}
                   >
-                    <span>{link.name}</span>
-                    <ArrowUpRight className="w-5 h-5 opacity-60" />
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono opacity-60">0{index + 1}</span>
+                      <span className="text-lg uppercase tracking-wide">{link.name}</span>
+                    </div>
+                    <ArrowUpRight className="w-5 h-5 opacity-70" />
                   </Link>
                 );
               })}
             </nav>
           </div>
 
-          <div className="flex flex-col gap-4 pt-6 border-t border-border">
+          {/* Footer Info & CTA */}
+          <div className="flex flex-col gap-4 pt-4 border-t border-border">
             <Link
               to="/contacto"
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-md bg-primary text-primary-foreground font-medium text-sm transition-opacity hover:opacity-90 text-center"
+              onClick={() => setIsOpen(false)}
+              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest shadow-md transition-opacity hover:opacity-90 text-center"
             >
-              Reservar visita <ArrowUpRight className="w-4 h-4" />
+              <span>Reservar Visita Privada</span>
+              <ArrowUpRight className="w-4 h-4" />
             </Link>
-            <div className="text-center text-xs text-muted-foreground tracking-widest uppercase mt-2">
-              San Cristóbal — Nueva Guayana
+
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground uppercase tracking-widest pt-1">
+              <span>San Cristóbal</span>
+              <span>Nueva Guayana</span>
             </div>
           </div>
         </div>
