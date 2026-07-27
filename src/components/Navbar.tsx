@@ -57,8 +57,8 @@ export function Navbar({ transparent = false }: NavbarProps) {
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         isOverlayTransparent
-          ? "absolute top-0 inset-x-0 bg-gradient-to-b from-black/70 via-black/30 to-transparent text-white border-b border-white/10"
-          : "bg-background/90 backdrop-blur-xl border-b border-border/60 text-foreground shadow-sm"
+          ? "absolute top-0 inset-x-0 bg-black/60 backdrop-blur-md text-white border-b border-white/20 shadow-lg"
+          : "bg-background/95 backdrop-blur-xl border-b border-border/80 text-foreground shadow-sm"
       }`}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 md:px-10 py-3 sm:py-4">
@@ -74,21 +74,27 @@ export function Navbar({ transparent = false }: NavbarProps) {
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 bg-neutral-500/10 dark:bg-white/5 backdrop-blur-md p-1.5 rounded-full border border-border/30">
+        <nav
+          className={`hidden md:flex items-center gap-1.5 p-1.5 rounded-full border transition-colors ${
+            isOverlayTransparent
+              ? "bg-black/50 backdrop-blur-lg border-white/25 shadow-inner"
+              : "bg-muted/80 backdrop-blur-md border-border/50"
+          }`}
+        >
           {navLinks.map((link) => {
             const isActive = location.pathname === link.href;
             return (
               <Link
                 key={link.href}
                 to={link.href}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-200 ${
                   isActive
                     ? isOverlayTransparent
-                      ? "bg-white text-neutral-950 shadow-sm"
-                      : "bg-primary text-primary-foreground shadow-sm"
+                      ? "bg-white text-black shadow-md font-extrabold"
+                      : "bg-primary text-primary-foreground shadow-md font-extrabold"
                     : isOverlayTransparent
-                    ? "text-white/90 hover:text-white hover:bg-white/10"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted"
+                    ? "text-white hover:bg-white/20 hover:text-white"
+                    : "text-foreground/80 hover:text-foreground hover:bg-background/80"
                 }`}
               >
                 {link.name}
@@ -101,10 +107,10 @@ export function Navbar({ transparent = false }: NavbarProps) {
         <div className="flex items-center gap-3">
           <a
             href="tel:+584242831342"
-            className={`hidden lg:flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+            className={`hidden lg:flex items-center gap-2 text-xs font-bold px-3.5 py-1.5 rounded-full border transition-colors ${
               isOverlayTransparent
-                ? "border-white/20 text-white/90 hover:bg-white/10"
-                : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "bg-black/40 border-white/30 text-white hover:bg-black/60"
+                : "bg-muted border-border text-foreground hover:bg-muted/80"
             }`}
           >
             <Phone className="w-3.5 h-3.5 text-primary" />
@@ -113,9 +119,9 @@ export function Navbar({ transparent = false }: NavbarProps) {
 
           <Link
             to="/contacto"
-            className={`hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] group ${
+            className={`hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-widest transition-all duration-300 shadow-md hover:shadow-lg hover:scale-[1.02] group ${
               isOverlayTransparent
-                ? "bg-white text-neutral-950 hover:bg-neutral-100"
+                ? "bg-white text-black hover:bg-neutral-100"
                 : "bg-primary text-primary-foreground hover:opacity-95"
             }`}
           >
@@ -128,7 +134,7 @@ export function Navbar({ transparent = false }: NavbarProps) {
             onClick={() => setIsOpen(!isOpen)}
             className={`md:hidden p-2.5 rounded-full transition-all focus:outline-none border ${
               isOverlayTransparent
-                ? "bg-black/30 border-white/20 text-white hover:bg-white/20"
+                ? "bg-black/50 border-white/30 text-white hover:bg-white/20"
                 : "bg-muted border-border text-foreground hover:bg-muted/80"
             }`}
             aria-label="Toggle navigation menu"
