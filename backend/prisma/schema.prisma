@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Ejemplo base de un modelo cumpliendo con la regla de Soft Deletes y Auditoría
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  
+  // Metadatos y Soft Deletes requeridos por el protocolo
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? 
+  
+  @@map("users")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String
+  action      String
+  entity      String
+  entityId    String
+  changes     String   // Se guardará como JSON stringificado
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  
+  @@map("audit_logs")
+}
