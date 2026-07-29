@@ -15,6 +15,11 @@ model User {
   id            String    @id @default(uuid())
   email         String    @unique
   passwordHash  String
+  fullName      String?
+  birthDate     String?
+  phoneNumber   String?
+  role          String    @default("CLIENTE")
+  isActive      Boolean   @default(true)
   
   // Metadatos y Soft Deletes requeridos por el protocolo
   createdAt     DateTime  @default(now())

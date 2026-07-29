@@ -29,7 +29,7 @@ class PrismaDatabaseClient implements IDatabaseClient {
       await this.client.$queryRaw`SELECT 1`;
       return true;
     } catch (error) {
-      logger.error('Fallo en el healthcheck de la base de datos:', error);
+      logger.error(error, 'Fallo en el healthcheck de la base de datos:');
       return false;
     }
   }

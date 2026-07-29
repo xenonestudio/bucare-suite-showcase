@@ -4,11 +4,12 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 import { env } from './config/env.config.js';
-import { globalErrorHandler } from './shared/middlewares/error.middleware.js';
+import { globalErrorHandler } from './shared/middlewares/errorHandler.middleware.js';
 import { tracingMiddleware } from './shared/middlewares/tracing.middleware.js';
 import pinoHttp from 'pino-http';
 import { logger } from './config/logger.config.js';
-import { userRoutes } from './modules/users/user.routes.js';
+import usersRoutes from './modules/users/users.routes.js';
+import authRoutes from './modules/auth/auth.routes.js';
 
 const app: Application = express();
 
@@ -64,7 +65,8 @@ app.get('/api/v1/health', (_req: Request, res: Response) => {
 });
 
 // 7. Registro de módulos de rutas de la API
-app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', usersRoutes);
 
 // 8. Manejador de rutas no encontradas (404)
 app.use((_req: Request, res: Response) => {

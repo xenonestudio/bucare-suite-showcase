@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AreasRouteImport } from './routes/areas'
 import { Route as ContactoRouteImport } from './routes/contacto'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as ResidenciasRouteImport } from './routes/residencias'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,6 +31,11 @@ const AreasRoute = AreasRouteImport.update({
 const ContactoRoute = ContactoRouteImport.update({
   id: '/contacto',
   path: '/contacto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -46,14 +53,21 @@ const ResidenciasRoute = ResidenciasRouteImport.update({
   path: '/residencias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/areas': typeof AreasRoute
   '/contacto': typeof ContactoRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
   '/residencias': typeof ResidenciasRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,36 +76,56 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
   '/residencias': typeof ResidenciasRoute
+  '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/areas': typeof AreasRoute
   '/contacto': typeof ContactoRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
   '/residencias': typeof ResidenciasRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/areas' | '/contacto' | '/login' | '/registro' | '/residencias'
+    | '/'
+    | '/areas'
+    | '/contacto'
+    | '/dashboard'
+    | '/login'
+    | '/registro'
+    | '/residencias'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/areas' | '/contacto' | '/login' | '/registro' | '/residencias'
-  id:
-    | '__root__'
+  to:
     | '/'
     | '/areas'
     | '/contacto'
     | '/login'
     | '/registro'
     | '/residencias'
+    | '/dashboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/areas'
+    | '/contacto'
+    | '/dashboard'
+    | '/login'
+    | '/registro'
+    | '/residencias'
+    | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AreasRoute: typeof AreasRoute
   ContactoRoute: typeof ContactoRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegistroRoute: typeof RegistroRoute
   ResidenciasRoute: typeof ResidenciasRoute
@@ -120,6 +154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -141,13 +182,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResidenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
+
+interface DashboardRouteChildren {
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AreasRoute: AreasRoute,
   ContactoRoute: ContactoRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   RegistroRoute: RegistroRoute,
   ResidenciasRoute: ResidenciasRoute,

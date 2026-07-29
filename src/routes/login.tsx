@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import heroBuilding from "@/assets/hero-building.jpg";
+import { useState } from "react";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -15,6 +16,45 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Credenciales inválidas");
+      }
+
+      // Guardar el token (podría ser en cookies en el futuro)
+      localStorage.setItem("token", data.data.token);
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+
+      // Redirigir al home o dashboard
+      navigate({ to: "/" });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-background text-foreground">
       {/* Left: Visual background (hidden on small screens) */}
@@ -51,9 +91,31 @@ function Login() {
             Accede a<br />tu cuenta
           </h1>
 
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-            <Field label="Correo electrónico" name="email" type="email" placeholder="tu@email.com" />
-            <Field label="Contraseña" name="password" type="password" placeholder="••••••••" />
+          {error && (
+            <div className="mb-4 text-xs font-semibold text-red-500 border border-red-500/20 bg-red-500/10 p-3 rounded-md">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <Field 
+              label="Correo electrónico" 
+              name="email" 
+              type="email" 
+              placeholder="tu@email.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
+            />
+            <Field 
+              label="Contraseña" 
+              name="password" 
+              type="password" 
+              placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
 
             <div className="flex items-center justify-between text-xs">
               <label className="flex items-center gap-2 text-muted-foreground cursor-pointer">
@@ -65,9 +127,10 @@ function Login() {
 
             <button
               type="submit"
-              className="w-full bg-primary text-primary-foreground py-3.5 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase rounded-md hover:opacity-90 transition-opacity shadow-sm"
+              disabled={isLoading}
+              className="w-full bg-primary text-primary-foreground py-3.5 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase rounded-md hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50"
             >
-              Ingresar
+              {isLoading ? "Ingresando..." : "Ingresar"}
             </button>
           </form>
 
@@ -91,8 +154,12 @@ function Login() {
   );
 }
 
-function Field({ label, name, type = "text", placeholder }: {
+function Field({ 
+  label, name, type = "text", placeholder, value, onChange, autoComplete 
+}: {
   label: string; name: string; type?: string; placeholder?: string;
+  value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  autoComplete?: string;
 }) {
   return (
     <div>
@@ -104,6 +171,10 @@ function Field({ label, name, type = "text", placeholder }: {
         name={name}
         type={type}
         placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required
+        autoComplete={autoComplete}
         className="w-full bg-transparent border-b border-border py-3 text-xs sm:text-sm focus:outline-none focus:border-foreground placeholder:text-muted-foreground/60"
       />
     </div>

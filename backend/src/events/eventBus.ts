@@ -12,7 +12,7 @@ class AppEventBus extends EventEmitter {
    * Emite un evento de manera segura registrando cualquier fallo en los listeners.
    */
   public emitEvent(eventName: string, payload?: any): void {
-    logger.debug(`[EventBus] Emitiendo evento: ${eventName}`, { payload });
+    logger.debug({ payload }, `[EventBus] Emitiendo evento: ${eventName}`);
     
     // El EventEmitter nativo es síncrono.
     // Usamos setImmediate para desacoplarlo del hilo de ejecución principal y forzar asincronía.
@@ -20,7 +20,7 @@ class AppEventBus extends EventEmitter {
       try {
         this.emit(eventName, payload);
       } catch (error) {
-        logger.error(`[EventBus] Error no controlado al procesar evento ${eventName}`, error);
+        logger.error(error, `[EventBus] Error no controlado al procesar evento ${eventName}`);
       }
     });
   }

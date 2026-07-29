@@ -2,8 +2,8 @@ import bcrypt from 'bcryptjs';
 import { UserRepository } from './user.repository.js';
 import { ConflictError, NotFoundError } from '../../shared/errors/errors.js';
 import { eventBus } from '../../events/eventBus.js';
-import { cacheService } from '../../services/cache.service.js';
-
+import { inMemoryCache as cacheService } from '../../services/cache.service.js';
+import { User } from '@prisma/client';
 export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
 
@@ -25,7 +25,7 @@ export class UserService {
     eventBus.emit('user.created', { userId: user.id, email: user.email });
 
     // Invalidar caché si existiera alguna lista de usuarios cacheados
-    cacheService.delete('users_list');
+    cacheService.del('users_list');
 
     return user;
   }
@@ -34,7 +34,7 @@ export class UserService {
     const cacheKey = `user_${id}`;
     
     // Intento de obtener de caché
-    const cachedUser = cacheService.get(cacheKey);
+    const cachedUser = cacheService.get<User>(cacheKey);
     if (cachedUser) {
       return cachedUser;
     }

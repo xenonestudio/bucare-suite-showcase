@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import property1 from "@/assets/property-1.jpg";
+import { useState } from "react";
 
 export const Route = createFileRoute("/registro")({
   head: () => ({
@@ -15,6 +16,61 @@ export const Route = createFileRoute("/registro")({
 });
 
 function Registro() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    passwordConfirm: "",
+    phoneNumber: "",
+    birthDate: "",
+  });
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (formData.password !== formData.passwordConfirm) {
+      setError("Las contraseñas no coinciden");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/v1/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          phoneNumber: formData.phoneNumber,
+          birthDate: formData.birthDate,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Error al crear la cuenta");
+      }
+
+      // Redirigir al login
+      navigate({ to: "/login" });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-background text-foreground">
       {/* Form Container */}
@@ -34,22 +90,34 @@ function Registro() {
             Crea tu<br />cuenta
           </h1>
 
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
-            <Field label="Nombre completo" name="name" placeholder="Tu nombre y apellido" />
-            <Field label="Correo electrónico" name="email" type="email" placeholder="tu@email.com" />
-            <Field label="Contraseña" name="password" type="password" placeholder="Mínimo 8 caracteres" />
-            <Field label="Confirmar contraseña" name="password2" type="password" placeholder="••••••••" />
+          {error && (
+            <div className="mb-4 text-xs font-semibold text-red-500 border border-red-500/20 bg-red-500/10 p-3 rounded-md">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleRegister} className="space-y-5">
+            <Field label="Nombre completo" name="fullName" placeholder="Tu nombre y apellido" value={formData.fullName} onChange={handleChange} autoComplete="name" />
+            <Field label="Correo electrónico" name="email" type="email" placeholder="tu@email.com" value={formData.email} onChange={handleChange} autoComplete="email" />
+            <Field label="Teléfono" name="phoneNumber" type="tel" placeholder="+584120000000" value={formData.phoneNumber} onChange={handleChange} autoComplete="tel" />
+            <Field label="Fecha de Nacimiento" name="birthDate" type="date" placeholder="YYYY-MM-DD" value={formData.birthDate} onChange={handleChange} autoComplete="bday" />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Contraseña" name="password" type="password" placeholder="Mínimo 8 caracteres" value={formData.password} onChange={handleChange} autoComplete="new-password" />
+              <Field label="Confirmar" name="passwordConfirm" type="password" placeholder="••••••••" value={formData.passwordConfirm} onChange={handleChange} autoComplete="new-password" />
+            </div>
 
             <label className="flex items-start gap-3 text-xs text-muted-foreground cursor-pointer pt-2">
-              <input type="checkbox" className="mt-0.5 accent-primary rounded-xs shrink-0" />
+              <input type="checkbox" required className="mt-0.5 accent-primary rounded-xs shrink-0" />
               <span>Acepto los términos de servicio y la política de privacidad de Bucare Suite.</span>
             </label>
 
             <button
               type="submit"
-              className="w-full bg-primary text-primary-foreground py-3.5 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase rounded-md hover:opacity-90 transition-opacity shadow-sm"
+              disabled={isLoading}
+              className="w-full bg-primary text-primary-foreground py-3.5 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase rounded-md hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50"
             >
-              Crear cuenta
+              {isLoading ? "Creando cuenta..." : "Crear cuenta"}
             </button>
           </form>
 
@@ -84,8 +152,12 @@ function Registro() {
   );
 }
 
-function Field({ label, name, type = "text", placeholder }: {
+function Field({ 
+  label, name, type = "text", placeholder, value, onChange, autoComplete 
+}: {
   label: string; name: string; type?: string; placeholder?: string;
+  value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  autoComplete?: string;
 }) {
   return (
     <div>
@@ -97,6 +169,10 @@ function Field({ label, name, type = "text", placeholder }: {
         name={name}
         type={type}
         placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required
+        autoComplete={autoComplete}
         className="w-full bg-transparent border-b border-border py-2.5 text-xs sm:text-sm focus:outline-none focus:border-foreground placeholder:text-muted-foreground/60"
       />
     </div>

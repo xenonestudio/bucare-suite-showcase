@@ -3,11 +3,11 @@
  */
 export type UserRole =
   | 'SUPERADMIN'
-  | 'ADMINISTRADOR'
-  | 'CONTABILIDAD'
+  | 'ADMIN'
+  | 'CONTADOR'
   | 'VENTAS'
   | 'PROYECTO'
-  | 'USUARIO';
+  | 'CLIENTE';
 
 /**
  * Entidad de dominio que representa un Usuario en el sistema.

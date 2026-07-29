@@ -1,3 +1,5 @@
+import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../config/database.config.js';
 import { IUser, ICreateUserDTO, IUpdateUserDTO, UserRole } from './users.types.js';
 
 export interface IUsersRepository {
@@ -10,67 +12,58 @@ export interface IUsersRepository {
 }
 
 export class UsersRepository implements IUsersRepository {
-  private usersStore: Map<string, IUser> = new Map();
+  private prisma: PrismaClient;
+
+  constructor() {
+    this.prisma = prisma;
+  }
 
   public async findByEmail(email: string): Promise<IUser | null> {
-    for (const user of this.usersStore.values()) {
-      if (user.email.toLowerCase() === email.toLowerCase()) {
-        return user;
-      }
-    }
-    return null;
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) return null;
+    return user as unknown as IUser;
   }
 
   public async findById(id: string): Promise<IUser | null> {
-    return this.usersStore.get(id) || null;
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) return null;
+    return user as unknown as IUser;
   }
 
   public async findByRole(role: UserRole): Promise<IUser[]> {
-    const results: IUser[] = [];
-    for (const user of this.usersStore.values()) {
-      if (user.role === role) {
-        results.push(user);
-      }
-    }
-    return results;
+    const users = await this.prisma.user.findMany({ where: { role } });
+    return users as unknown as IUser[];
   }
 
   public async create(data: ICreateUserDTO & { passwordHash: string }): Promise<IUser> {
-    const newId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const now = new Date();
-
-    const user: IUser = {
-      id: newId,
-      email: data.email,
-      fullName: data.fullName,
-      birthDate: data.birthDate,
-      phoneNumber: data.phoneNumber,
-      passwordHash: data.passwordHash,
-      role: data.role || 'USUARIO',
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.usersStore.set(newId, user);
-    return user;
+    const user = await this.prisma.user.create({
+      data: {
+        email: data.email,
+        passwordHash: data.passwordHash,
+        fullName: data.fullName,
+        birthDate: data.birthDate,
+        phoneNumber: data.phoneNumber,
+        role: data.role || 'CLIENTE',
+        isActive: true,
+      }
+    });
+    return user as unknown as IUser;
   }
 
   public async update(id: string, data: IUpdateUserDTO): Promise<IUser | null> {
-    const existing = this.usersStore.get(id);
-    if (!existing) return null;
-
-    const updatedUser: IUser = {
-      ...existing,
-      ...data,
-      updatedAt: new Date(),
-    };
-
-    this.usersStore.set(id, updatedUser);
-    return updatedUser;
+    try {
+      const user = await this.prisma.user.update({
+        where: { id },
+        data,
+      });
+      return user as unknown as IUser;
+    } catch (e) {
+      return null;
+    }
   }
 
   public async findAll(): Promise<IUser[]> {
-    return Array.from(this.usersStore.values());
+    const users = await this.prisma.user.findMany();
+    return users as unknown as IUser[];
   }
 }

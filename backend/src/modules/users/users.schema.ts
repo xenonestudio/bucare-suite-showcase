@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 const userRolesEnum = z.enum([
   'SUPERADMIN',
-  'ADMINISTRADOR',
-  'CONTABILIDAD',
+  'ADMIN',
+  'CONTADOR',
   'VENTAS',
   'PROYECTO',
-  'USUARIO',
+  'CLIENTE',
 ]);
 
 const birthDateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -26,7 +26,7 @@ export const createUserSchema = z.object({
     phoneNumber: z
       .string()
       .regex(phoneRegex, 'El número de teléfono proporcionado no es válido'),
-    role: userRolesEnum.optional().default('USUARIO'),
+    role: userRolesEnum.optional().default('CLIENTE'),
   }),
 });
 
