@@ -16,7 +16,29 @@ export default defineConfig({
     preset: "node-server",
     prerender: {
       crawlLinks: true,
-      routes: ["/", "/residencias", "/areas", "/contacto", "/login", "/registro"],
+      routes: ["/", "/residencias", "/areas", "/contacto", "/login", "/registro", "/comercial", "/dashboard/chat"],
     },
-  },
+  } as any,
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes("node_modules")) {
+              if (id.includes("react") || id.includes("scheduler")) {
+                return "vendor-react";
+              }
+              if (id.includes("@tanstack")) {
+                return "vendor-tanstack";
+              }
+              if (id.includes("lucide-react") || id.includes("recharts") || id.includes("@radix-ui")) {
+                return "vendor-ui-libs";
+              }
+              return "vendor";
+            }
+          }
+        }
+      }
+    }
+  }
 });

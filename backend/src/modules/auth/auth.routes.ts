@@ -4,7 +4,7 @@ import { AuthService } from './auth.service.js';
 import { UsersService } from '../users/users.service.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { validateSchema } from '../../shared/middlewares/validateSchema.middleware.js';
-import { loginSchema } from './auth.schema.js';
+import { loginSchema, googleLoginSchema } from './auth.schema.js';
 import { createUserSchema } from '../users/users.schema.js';
 
 const usersRepository = new UsersRepository();
@@ -19,6 +19,12 @@ const router = Router();
  * @desc Iniciar sesión y obtener JWT
  */
 router.post('/login', validateSchema(loginSchema), authController.login);
+
+/**
+ * @route POST /api/v1/auth/google
+ * @desc Autenticación y registro con Google OAuth
+ */
+router.post('/google', validateSchema(googleLoginSchema), authController.googleLogin);
 
 /**
  * @route POST /api/v1/auth/register

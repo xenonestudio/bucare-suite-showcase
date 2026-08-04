@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import property1 from "@/assets/property-1.jpg";
 import { useState } from "react";
+import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 
 export const Route = createFileRoute("/registro")({
   head: () => ({
@@ -77,7 +78,7 @@ function Registro() {
       <div className="flex flex-col px-5 sm:px-8 md:px-14 py-6 sm:py-10 md:py-14 md:order-1 justify-between">
         <div className="flex items-center justify-between">
           <Link to="/" className="md:hidden flex items-center">
-            <img src="/logo.png" alt="Bucare Suite" className="h-10 w-auto" />
+            <img src="/logo.png" alt="Bucare Suite" className="h-14 w-auto object-contain" />
           </Link>
           <Link to="/" className="ml-auto inline-flex items-center gap-2 text-xs sm:text-sm font-medium hover:opacity-75 transition-opacity">
             <ArrowLeft className="w-4 h-4" /> Volver al inicio
@@ -115,13 +116,29 @@ function Registro() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary text-primary-foreground py-3.5 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase rounded-md hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50"
+              className="w-full bg-primary text-primary-foreground py-3.5 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase rounded-md hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? "Creando cuenta..." : "Crear cuenta"}
             </button>
           </form>
 
-          <p className="mt-8 text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+          <div className="my-6 flex items-center gap-4 text-[11px] tracking-[0.2em] uppercase text-muted-foreground">
+            <span className="flex-1 h-px bg-border" /> o <span className="flex-1 h-px bg-border" />
+          </div>
+
+          <div className="mb-6">
+            <GoogleLoginButton
+              text="Registrarse con Google"
+              onSuccess={(data) => {
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("user", JSON.stringify(data.user));
+                navigate({ to: "/" });
+              }}
+              onError={(msg) => setError(msg)}
+            />
+          </div>
+
+          <p className="mt-6 text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
             ¿Ya tienes una cuenta registrada?{" "}
             <Link to="/login" className="text-foreground font-semibold inline-flex items-center gap-1 border-b border-foreground pb-0.5 hover:opacity-75">
               Ingresar <ArrowUpRight className="w-3.5 h-3.5" />

@@ -3,6 +3,8 @@ import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { useSiteContent } from "@/hooks/useSiteContent";
+
 
 export const Route = createFileRoute("/contacto")({
   head: () => ({
@@ -11,6 +13,7 @@ export const Route = createFileRoute("/contacto")({
       { name: "description", content: "Agenda una visita privada o solicita información sobre las residencias de Bucare Suite en San Cristóbal, Nueva Guayana." },
       { property: "og:title", content: "Contacto — Bucare Suite" },
       { property: "og:description", content: "Reserva tu visita a Bucare Suite en Nueva Guayana." },
+      { property: "og:image", content: "/logo.webp" },
     ],
   }),
   component: Contacto,
@@ -18,6 +21,8 @@ export const Route = createFileRoute("/contacto")({
 
 function Contacto() {
   const [sent, setSent] = useState(false);
+  const { content } = useSiteContent();
+  const c = content.contacto;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -34,11 +39,11 @@ function Contacto() {
         {/* Left: Info */}
         <div className="px-5 sm:px-8 md:px-14 py-10 sm:py-16 md:py-24 border-b lg:border-b-0 lg:border-r border-border flex flex-col justify-between">
           <div>
-            <h1 className="text-display text-3xl sm:text-5xl md:text-7xl uppercase leading-[0.95] font-bold">
-              Hablemos<br />de tu próximo<br />hogar
+            <h1 className="text-display text-3xl sm:text-5xl md:text-7xl uppercase leading-[0.95] font-bold whitespace-pre-line">
+              {c.title}
             </h1>
             <p className="mt-4 sm:mt-8 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Nuestro equipo te atiende de lunes a sábado. Responde este formulario y agendaremos una visita privada al edificio o una llamada.
+              {c.subtitle}
             </p>
           </div>
 
@@ -47,25 +52,26 @@ function Contacto() {
               <MapPin className="w-4 h-4 mt-1 text-primary shrink-0" />
               <div>
                 <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-0.5">Dirección</div>
-                QQJC+93C San Cristóbal 5001<br />Nueva Guayana, Venezuela
+                <div className="whitespace-pre-line">{c.address}</div>
               </div>
             </div>
             <div className="flex items-start gap-4">
               <Phone className="w-4 h-4 mt-1 text-primary shrink-0" />
               <div>
                 <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-0.5">Teléfono</div>
-                +58 (276) 000-0000 / 0424 283 1342
+                <div>{c.phone}</div>
               </div>
             </div>
             <div className="flex items-start gap-4">
               <Mail className="w-4 h-4 mt-1 text-primary shrink-0" />
               <div>
                 <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-0.5">Email</div>
-                hola@bucaresuite.com
+                <div>{c.email}</div>
               </div>
             </div>
           </div>
         </div>
+
 
         {/* Right: Form */}
         <div className="px-5 sm:px-8 md:px-14 py-10 sm:py-16 md:py-24 bg-muted/30 flex items-center">

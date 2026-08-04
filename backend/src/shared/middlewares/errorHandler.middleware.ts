@@ -12,13 +12,13 @@ export const globalErrorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  const isOperational = err instanceof AppError && err.isOperational;
-  const statusCode = err instanceof AppError ? err.statusCode : 500;
-  const errorCode = err instanceof AppError ? err.errorCode : 'INTERNAL_SERVER_ERROR';
+  const isOperational = (err as any).isOperational === true;
+  const statusCode = typeof (err as any).statusCode === 'number' ? (err as any).statusCode : 500;
+  const errorCode = typeof (err as any).errorCode === 'string' ? (err as any).errorCode : 'INTERNAL_SERVER_ERROR';
   // Attempt to cast to an object that might have 'details' like ValidationError
   const details = (err as any).details || [];
 
-  console.error(`[Error Logged] ${err.name}: ${err.message}`, {
+  console.error(`[Error Logged] ${err.name || 'Error'}: ${err.message}`, {
     stack: err.stack,
     isOperational,
     details,
@@ -28,9 +28,7 @@ export const globalErrorHandler = (
     success: false,
     error: {
       code: errorCode,
-      message: isOperational || env.NODE_ENV !== 'production'
-        ? err.message
-        : 'Ha ocurrido un error interno en el servidor.',
+      message: err.message || 'Ha ocurrido un error interno en el servidor.',
       details,
     },
     timestamp: new Date().toISOString(),

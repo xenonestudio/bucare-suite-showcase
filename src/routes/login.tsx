@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import heroBuilding from "@/assets/hero-building.jpg";
 import { useState } from "react";
+import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -42,9 +43,26 @@ function Login() {
         throw new Error(data.message || "Credenciales inválidas");
       }
 
-      // Guardar el token (podría ser en cookies en el futuro)
+      // Guardar el token
       localStorage.setItem("token", data.data.token);
       localStorage.setItem("user", JSON.stringify(data.data.user));
+
+      // Reclamar / vincular sesión de chat si navegó previamente como invitado
+      const guestToken = localStorage.getItem("bucare_guest_token");
+      if (guestToken) {
+        try {
+          await fetch("/api/v1/chat/claim-guest-session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${data.data.token}`,
+            },
+            body: JSON.stringify({ guestToken }),
+          });
+        } catch (claimErr) {
+          console.error("Error al vincular sesión de chat invitado:", claimErr);
+        }
+      }
 
       // Redirigir al home o dashboard
       navigate({ to: "/" });
@@ -63,7 +81,7 @@ function Login() {
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative h-full flex flex-col justify-between p-10 text-white">
           <Link to="/" className="flex items-center">
-            <img src="/logo.png" alt="Bucare Suite" className="h-12 w-auto brightness-200" />
+            <img src="/logo.png" alt="Bucare Suite" className="h-16 w-auto brightness-200 object-contain" />
           </Link>
           <div>
             <div className="text-[11px] tracking-[0.2em] uppercase opacity-80 mb-2 font-semibold">Portal privado</div>
@@ -78,7 +96,7 @@ function Login() {
       <div className="flex flex-col px-5 sm:px-8 md:px-14 py-6 sm:py-10 md:py-14 justify-between">
         <div className="flex items-center justify-between">
           <Link to="/" className="md:hidden flex items-center">
-            <img src="/logo.png" alt="Bucare Suite" className="h-10 w-auto" />
+            <img src="/logo.png" alt="Bucare Suite" className="h-14 w-auto object-contain" />
           </Link>
           <Link to="/" className="ml-auto inline-flex items-center gap-2 text-xs sm:text-sm font-medium hover:opacity-75 transition-opacity">
             <ArrowLeft className="w-4 h-4" /> Volver al inicio
@@ -128,14 +146,26 @@ function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary text-primary-foreground py-3.5 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase rounded-md hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50"
+              className="w-full bg-primary text-primary-foreground py-3.5 text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase rounded-md hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? "Ingresando..." : "Ingresar"}
             </button>
           </form>
 
-          <div className="my-8 flex items-center gap-4 text-[11px] tracking-[0.2em] uppercase text-muted-foreground">
+          <div className="my-6 flex items-center gap-4 text-[11px] tracking-[0.2em] uppercase text-muted-foreground">
             <span className="flex-1 h-px bg-border" /> o <span className="flex-1 h-px bg-border" />
+          </div>
+
+          <div className="mb-8">
+            <GoogleLoginButton
+              text="Ingresar con Google"
+              onSuccess={(data) => {
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("user", JSON.stringify(data.user));
+                navigate({ to: "/" });
+              }}
+              onError={(msg) => setError(msg)}
+            />
           </div>
 
           <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">

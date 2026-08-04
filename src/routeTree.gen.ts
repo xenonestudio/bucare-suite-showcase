@@ -11,12 +11,18 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AreasRouteImport } from './routes/areas'
+import { Route as ComercialRouteImport } from './routes/comercial'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as ResidenciasRouteImport } from './routes/residencias'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as DashboardChatRouteImport } from './routes/dashboard.chat'
+import { Route as DashboardCitasRouteImport } from './routes/dashboard.citas'
+import { Route as DashboardClientesRouteImport } from './routes/dashboard.clientes'
+import { Route as DashboardConfiguracionRouteImport } from './routes/dashboard.configuracion'
+import { Route as DashboardPerfilRouteImport } from './routes/dashboard.perfil'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -26,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
 const AreasRoute = AreasRouteImport.update({
   id: '/areas',
   path: '/areas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComercialRoute = ComercialRouteImport.update({
+  id: '/comercial',
+  path: '/comercial',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactoRoute = ContactoRouteImport.update({
@@ -58,35 +69,78 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardChatRoute = DashboardChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCitasRoute = DashboardCitasRouteImport.update({
+  id: '/citas',
+  path: '/citas',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardClientesRoute = DashboardClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardConfiguracionRoute = DashboardConfiguracionRouteImport.update({
+  id: '/configuracion',
+  path: '/configuracion',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPerfilRoute = DashboardPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/areas': typeof AreasRoute
+  '/comercial': typeof ComercialRoute
   '/contacto': typeof ContactoRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
   '/residencias': typeof ResidenciasRoute
+  '/dashboard/chat': typeof DashboardChatRoute
+  '/dashboard/citas': typeof DashboardCitasRoute
+  '/dashboard/clientes': typeof DashboardClientesRoute
+  '/dashboard/configuracion': typeof DashboardConfiguracionRoute
+  '/dashboard/perfil': typeof DashboardPerfilRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/areas': typeof AreasRoute
+  '/comercial': typeof ComercialRoute
   '/contacto': typeof ContactoRoute
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
   '/residencias': typeof ResidenciasRoute
+  '/dashboard/chat': typeof DashboardChatRoute
+  '/dashboard/citas': typeof DashboardCitasRoute
+  '/dashboard/clientes': typeof DashboardClientesRoute
+  '/dashboard/configuracion': typeof DashboardConfiguracionRoute
+  '/dashboard/perfil': typeof DashboardPerfilRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/areas': typeof AreasRoute
+  '/comercial': typeof ComercialRoute
   '/contacto': typeof ContactoRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
   '/residencias': typeof ResidenciasRoute
+  '/dashboard/chat': typeof DashboardChatRoute
+  '/dashboard/citas': typeof DashboardCitasRoute
+  '/dashboard/clientes': typeof DashboardClientesRoute
+  '/dashboard/configuracion': typeof DashboardConfiguracionRoute
+  '/dashboard/perfil': typeof DashboardPerfilRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -94,36 +148,55 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/areas'
+    | '/comercial'
     | '/contacto'
     | '/dashboard'
     | '/login'
     | '/registro'
     | '/residencias'
+    | '/dashboard/chat'
+    | '/dashboard/citas'
+    | '/dashboard/clientes'
+    | '/dashboard/configuracion'
+    | '/dashboard/perfil'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/areas'
+    | '/comercial'
     | '/contacto'
     | '/login'
     | '/registro'
     | '/residencias'
+    | '/dashboard/chat'
+    | '/dashboard/citas'
+    | '/dashboard/clientes'
+    | '/dashboard/configuracion'
+    | '/dashboard/perfil'
     | '/dashboard'
   id:
     | '__root__'
     | '/'
     | '/areas'
+    | '/comercial'
     | '/contacto'
     | '/dashboard'
     | '/login'
     | '/registro'
     | '/residencias'
+    | '/dashboard/chat'
+    | '/dashboard/citas'
+    | '/dashboard/clientes'
+    | '/dashboard/configuracion'
+    | '/dashboard/perfil'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AreasRoute: typeof AreasRoute
+  ComercialRoute: typeof ComercialRoute
   ContactoRoute: typeof ContactoRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
@@ -145,6 +218,13 @@ declare module '@tanstack/react-router' {
       path: '/areas'
       fullPath: '/areas'
       preLoaderRoute: typeof AreasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comercial': {
+      id: '/comercial'
+      path: '/comercial'
+      fullPath: '/comercial'
+      preLoaderRoute: typeof ComercialRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contacto': {
@@ -189,14 +269,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/chat': {
+      id: '/dashboard/chat'
+      path: '/chat'
+      fullPath: '/dashboard/chat'
+      preLoaderRoute: typeof DashboardChatRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/citas': {
+      id: '/dashboard/citas'
+      path: '/citas'
+      fullPath: '/dashboard/citas'
+      preLoaderRoute: typeof DashboardCitasRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/clientes': {
+      id: '/dashboard/clientes'
+      path: '/clientes'
+      fullPath: '/dashboard/clientes'
+      preLoaderRoute: typeof DashboardClientesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/configuracion': {
+      id: '/dashboard/configuracion'
+      path: '/configuracion'
+      fullPath: '/dashboard/configuracion'
+      preLoaderRoute: typeof DashboardConfiguracionRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/perfil': {
+      id: '/dashboard/perfil'
+      path: '/perfil'
+      fullPath: '/dashboard/perfil'
+      preLoaderRoute: typeof DashboardPerfilRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
+  DashboardChatRoute: typeof DashboardChatRoute
+  DashboardCitasRoute: typeof DashboardCitasRoute
+  DashboardClientesRoute: typeof DashboardClientesRoute
+  DashboardConfiguracionRoute: typeof DashboardConfiguracionRoute
+  DashboardPerfilRoute: typeof DashboardPerfilRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardChatRoute: DashboardChatRoute,
+  DashboardCitasRoute: DashboardCitasRoute,
+  DashboardClientesRoute: DashboardClientesRoute,
+  DashboardConfiguracionRoute: DashboardConfiguracionRoute,
+  DashboardPerfilRoute: DashboardPerfilRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
@@ -207,6 +332,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AreasRoute: AreasRoute,
+  ComercialRoute: ComercialRoute,
   ContactoRoute: ContactoRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,

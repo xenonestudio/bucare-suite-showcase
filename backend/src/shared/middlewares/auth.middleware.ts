@@ -44,6 +44,29 @@ export const authenticateJWT = (
 };
 
 /**
+ * Middleware opcional para extraer el usuario JWT si existe token, pero sin bloquear peticiones invitadas.
+ */
+export const optionalAuthenticateJWT = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, env.JWT_SECRET) as AuthenticatedUserPayload;
+      req.user = decoded;
+    } catch (_error) {
+      // Si el token falló, continuamos como invitado
+    }
+  }
+
+  next();
+};
+
+/**
  * Middleware RBAC para validar roles requeridos en endpoints restringidos.
  *
  * @param allowedRoles - Roles autorizados a acceder al recurso.

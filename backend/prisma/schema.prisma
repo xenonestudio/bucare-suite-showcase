@@ -14,7 +14,9 @@ datasource db {
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
-  passwordHash  String
+  passwordHash  String?
+  googleId      String?   @unique
+  avatarUrl     String?
   fullName      String?
   birthDate     String?
   phoneNumber   String?
@@ -26,6 +28,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? 
   
+  chatSessions  ChatSession[]
+
   @@map("users")
 }
 
@@ -41,3 +45,65 @@ model AuditLog {
   
   @@map("audit_logs")
 }
+
+model Cita {
+  id              String   @id @default(uuid())
+  clienteId       String
+  fecha           DateTime
+  tipoPropiedad   String   // "APARTAMENTO" o "LOCAL"
+  estado          String   @default("PROGRAMADA") // PROGRAMADA, COMPLETADA, CANCELADA
+  notas           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("citas")
+}
+
+model ChatSession {
+  id          String        @id @default(uuid())
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestToken  String?       @unique
+  guestName   String?
+  project     String        // "BUCARE_SUITE" | "BUCARE_PLAZA"
+  isAiActive  Boolean       @default(true) // Permite intervención humana del administrador
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  messages    ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id          String      @id @default(uuid())
+  sessionId   String
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender      String      // "USER" | "AI" | "ADMIN"
+  content     String
+  createdAt   DateTime    @default(now())
+
+  @@map("chat_messages")
+}
+
+model AiConfig {
+  id            String   @id @default(uuid())
+  project       String   @unique // "BUCARE_SUITE" | "BUCARE_PLAZA"
+  systemPrompt  String
+  selectedModel String?  @default("gemini-2.0-flash")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("ai_configs")
+}
+
+model SiteContent {
+  id        String   @id @default(uuid())
+  section   String   @unique // "hero", "proximo_hogar", "residencias", "areas"
+  data      String   // JSON stringificado con textos e imágenes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("site_contents")
+}
+

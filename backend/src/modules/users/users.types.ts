@@ -15,10 +15,12 @@ export type UserRole =
 export interface IUser {
   id: string;
   email: string;
-  fullName: string;
-  birthDate: string; // Formato YYYY-MM-DD
-  phoneNumber: string;
-  passwordHash: string;
+  fullName?: string | null;
+  birthDate?: string | null;
+  phoneNumber?: string | null;
+  passwordHash?: string | null;
+  googleId?: string | null;
+  avatarUrl?: string | null;
   role: UserRole;
   isActive: boolean;
   createdAt: Date;

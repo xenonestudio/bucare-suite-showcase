@@ -1,8 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, Check, Eye } from "lucide-react";
+import { ArrowUpRight, Check, Eye, Maximize2, ZoomIn, ZoomOut, RotateCcw, X } from "lucide-react";
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { useSiteContent } from "@/hooks/useSiteContent";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
 
 export const Route = createFileRoute("/residencias")({
   head: () => ({
@@ -11,6 +15,7 @@ export const Route = createFileRoute("/residencias")({
       { name: "description", content: "Explora los 6 modelos de residencias disponibles en Bucare Suite, San Cristóbal, Nueva Guayana. Planos y renders de cada tipología." },
       { property: "og:title", content: "Residencias — Bucare Suite" },
       { property: "og:description", content: "6 modelos de residencias en Bucare Suite, San Cristóbal, Nueva Guayana." },
+      { property: "og:image", content: "/logo.webp" },
     ],
   }),
   component: Residencias,
@@ -28,43 +33,22 @@ type Model = {
   render: string;
 };
 
-const models: Model[] = [
-  { 
-    id: "01", name: "MODELO 01", area: "31.60 m²", bedrooms: "1 hab.", bathrooms: "1 baño", balcony: "Jardinera / Balcón frontal",
-    distribution: ["Acceso / Ingreso central.", "Baño completo accesible cerca de la entrada.", "Área integradora de comedor y cocina lineal.", "Habitación principal integrada con vista y salida hacia el balcón/jardinera."],
-    plan: "/modelos/mapa_modelo01.jpg", render: "/modelos/Imagen_modelo01.jpg"
-  },
-  { 
-    id: "02", name: "MODELO 02", area: "45.03 m²", bedrooms: "1 hab.", bathrooms: "1 baño", balcony: "Balcón / Área verde frontal",
-    distribution: ["Acceso / Ingreso con área de recibidor.", "Baño completo.", "Cocina en L / Comedor auxiliar circular.", "Zona de trabajo o escritorio.", "Habitación espaciosa con salida a balcón con jardines."],
-    plan: "/modelos/mapa_modelo02.jpg", render: "/modelos/Imagen_modelo02.jpg"
-  },
-  { 
-    id: "03", name: "MODELO 03", area: "56.70 m²", bedrooms: "2 hab.", bathrooms: "2 baños", balcony: "Balcón",
-    distribution: ["Ingreso a la zona social (sala de estar).", "Cocina abierta integrada con barra/comedor.", "2 habitaciones (habitación principal con baño privado y habitación secundaria).", "2 baños completos.", "Balcón continuo en la fachada posterior/lateral."],
-    plan: "/modelos/mapa_modelo03.jpg", render: "/modelos/Imagen_modelo03.jpg"
-  },
-  { 
-    id: "04", name: "MODELO 04", area: "63.23 m²", bedrooms: "2 hab.", bathrooms: "2 baños", balcony: "Balcón",
-    distribution: ["Ingreso con recibidor.", "Cocina amplia integrada a comedor central.", "Sala de estar acogedora.", "Habitación principal de gran tamaño y habitación secundaria.", "2 baños completos.", "Balcón."],
-    plan: "/modelos/mapa_modelo04.jpg", render: "/modelos/Imagen_modelo04.jpg"
-  },
-  { 
-    id: "05", name: "MODELO 05", area: "73.88 m²", bedrooms: "2 hab.", bathrooms: "2 baños", balcony: "Balcones amplios",
-    distribution: ["Acceso con área de cocina en isla / barra desayunadora y área de servicios.", "Sala de estar amplia con salida directa a amplio balcón con vegetación.", "2 habitaciones de excelente tamaño.", "2 baños completos.", "Balcones extensos con jardineras."],
-    plan: "/modelos/mapa_modelo05.jpg", render: "/modelos/Imagen_modelo05.jpg"
-  },
-  { 
-    id: "06", name: "MODELO 06", area: "86.91 m²", bedrooms: "3 hab.", bathrooms: "2 baños", balcony: "Balcones",
-    distribution: ["Es el modelo de mayor área del condominio.", "Acceso/Ingreso directo a área social con sala y amplio comedor.", "Cocina moderna en L integrando la zona social.", "3 habitaciones (habitación principal con baño suite y 2 habitaciones secundarias/estudio).", "2 baños completos.", "Múltiples balcón/jardineras que bordean los espacios principales."],
-    plan: "/modelos/mapa_modelo06.jpg", render: "/modelos/Imagen_modelo06.jpg"
-  },
-];
-
 function Residencias() {
-  const [activeId, setActiveId] = useState(models[0].id);
+  const { content } = useSiteContent();
+  const resData = content.residencias;
+  const models = resData.models || [];
+
+  const [activeId, setActiveId] = useState(models[0]?.id || "01");
   const [viewTab, setViewTab] = useState<"both" | "render" | "plan">("both");
+  const [zoomModal, setZoomModal] = useState<{ open: boolean; src: string; title: string }>({ open: false, src: "", title: "" });
+  const [zoomScale, setZoomScale] = useState(1);
+
   const active = models.find((m) => m.id === activeId) ?? models[0];
+
+  const handleZoomIn = () => setZoomScale((prev) => Math.min(prev + 0.25, 3));
+  const handleZoomOut = () => setZoomScale((prev) => Math.max(prev - 0.25, 0.5));
+  const handleResetZoom = () => setZoomScale(1);
+
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -73,21 +57,22 @@ function Residencias() {
       {/* Meta strip */}
       <div className="hidden md:flex items-center justify-between px-10 py-3 text-[11px] tracking-[0.2em] uppercase text-muted-foreground border-b border-border/40">
         <span>Residencias</span>
-        <span>6 tipologías disponibles</span>
+        <span>{models.length} tipologías disponibles</span>
         <span>QQJC+93C San Cristóbal</span>
       </div>
 
       {/* Header section */}
       <section className="px-5 sm:px-8 md:px-10 py-8 sm:py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-end">
-          <h1 className="md:col-span-8 text-display text-3xl sm:text-5xl md:text-7xl uppercase leading-[0.95] font-bold">
-            Seis formas<br />de vivir Bucare
+          <h1 className="md:col-span-8 text-display text-3xl sm:text-5xl md:text-7xl uppercase leading-[0.95] font-bold whitespace-pre-line">
+            {resData.title}
           </h1>
           <p className="md:col-span-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Cada modelo está pensado para un ritmo de vida distinto. Selecciona una tipología para conocer su plano y ver cómo se materializa.
+            {resData.subtitle}
           </p>
         </div>
       </section>
+
 
       {/* Split screen: sidebar + detail */}
       <section className="px-4 sm:px-6 md:px-10 pb-16 sm:pb-24 flex-1">
@@ -183,35 +168,48 @@ function Residencias() {
             {/* Images Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(viewTab === "both" || viewTab === "render") && (
-                <figure className="relative overflow-hidden rounded-md bg-muted border border-border">
+                <figure
+                  onClick={() => setZoomModal({ open: true, src: active.render, title: `Render Arquitectónico — ${active.name}` })}
+                  className="relative overflow-hidden rounded-md bg-muted border border-border group cursor-zoom-in"
+                >
                   <img
                     src={active.render}
                     alt={`Render ${active.name}`}
                     width={1600}
                     height={1200}
-                    className="w-full h-[280px] sm:h-[380px] md:h-[500px] object-cover"
+                    className="w-full h-[280px] sm:h-[380px] md:h-[500px] object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <figcaption className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.2em] bg-background/90 font-semibold px-2.5 py-1 rounded-xs shadow-xs">
                     Render Arquitectónico
                   </figcaption>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-semibold text-xs uppercase tracking-wider">
+                    <Maximize2 size={16} /> Ver Pantalla Completa & Zoom
+                  </div>
                 </figure>
               )}
 
               {(viewTab === "both" || viewTab === "plan") && (
-                <figure className="relative overflow-hidden rounded-md bg-white border border-border">
+                <figure
+                  onClick={() => setZoomModal({ open: true, src: active.plan, title: `Plano de Distribución — ${active.name}` })}
+                  className="relative overflow-hidden rounded-md bg-white border border-border group cursor-zoom-in"
+                >
                   <img
                     src={active.plan}
                     alt={`Plano ${active.name}`}
                     width={1600}
                     height={1200}
-                    className="w-full h-[280px] sm:h-[380px] md:h-[500px] object-contain p-2"
+                    className="w-full h-[280px] sm:h-[380px] md:h-[500px] object-contain p-2 group-hover:scale-105 transition-transform duration-500"
                   />
                   <figcaption className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.2em] bg-background/90 text-foreground font-semibold px-2.5 py-1 rounded-xs shadow-xs border border-border">
                     Plano de Distribución
                   </figcaption>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-semibold text-xs uppercase tracking-wider">
+                    <Maximize2 size={16} /> Ver Pantalla Completa & Zoom
+                  </div>
                 </figure>
               )}
             </div>
+
 
             {/* Specs & Description */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-8 pt-8 border-t border-border">
@@ -276,6 +274,71 @@ function Residencias() {
       </section>
 
       <Footer />
+
+      {/* Modal Visor Pantalla Completa & Zoom */}
+      <Dialog
+        open={zoomModal.open}
+        onOpenChange={(open) => {
+          if (!open) setZoomScale(1);
+          setZoomModal((prev) => ({ ...prev, open }));
+        }}
+      >
+        <DialogContent className="max-w-[95vw] w-full max-h-[92vh] h-full p-0 overflow-hidden bg-black/95 border border-white/10 text-white flex flex-col">
+          {/* Header del Modal con Controles */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40 backdrop-blur-md shrink-0">
+            <DialogTitle className="text-sm sm:text-base font-semibold tracking-wide text-white">
+              {zoomModal.title}
+            </DialogTitle>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleZoomIn}
+                className="h-8 px-2.5 bg-white/10 hover:bg-white/20 text-white border-white/20"
+                title="Acercar (Zoom In)"
+              >
+                <ZoomIn size={16} />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleZoomOut}
+                className="h-8 px-2.5 bg-white/10 hover:bg-white/20 text-white border-white/20"
+                title="Alejar (Zoom Out)"
+              >
+                <ZoomOut size={16} />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResetZoom}
+                className="h-8 px-2.5 bg-white/10 hover:bg-white/20 text-white border-white/20"
+                title="Restablecer (Reset)"
+              >
+                <RotateCcw size={14} />
+              </Button>
+              <span className="text-xs font-mono text-white/70 min-w-[42px] text-center">
+                {Math.round(zoomScale * 100)}%
+              </span>
+            </div>
+          </div>
+
+          {/* Área de Visualización Panorámica */}
+          <div className="flex-1 overflow-auto p-4 flex items-center justify-center relative cursor-grab active:cursor-grabbing select-none">
+            <img
+              src={zoomModal.src}
+              alt={zoomModal.title}
+              style={{ transform: `scale(${zoomScale})` }}
+              className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out origin-center"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

@@ -1,7 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
+import { useSiteContent } from "@/hooks/useSiteContent";
 
 export function Footer() {
+  const { content } = useSiteContent();
+  const c = content.contacto;
+
   return (
     <footer className="bg-neutral-900 text-neutral-200 border-t border-neutral-800">
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-12 md:py-16">
@@ -9,7 +13,7 @@ export function Footer() {
           {/* Brand */}
           <div className="sm:col-span-2 md:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <img src="/logo.png" alt="Bucare Suite" className="h-12 w-auto brightness-0 invert" />
+              <img src="/logo.png" alt="Bucare Suite" className="h-16 md:h-20 w-auto brightness-0 invert object-contain" />
             </Link>
             <p className="text-xs text-neutral-400 leading-relaxed max-w-xs">
               Residencias contemporáneas de alta gama en San Cristóbal, Nueva Guayana. Arquitectura inteligente y serenidad atemporal.
@@ -48,15 +52,15 @@ export function Footer() {
           {/* Location / Info */}
           <div>
             <h4 className="text-xs font-semibold tracking-widest uppercase text-neutral-400 mb-4">
-              Ubicación
+              Ubicación & Contacto
             </h4>
-            <address className="not-italic text-xs text-neutral-400 space-y-2 leading-relaxed">
-              <p>QQJC+93C San Cristóbal 5001</p>
-              <p>Nueva Guayana, Venezuela</p>
-              <p className="pt-2 text-neutral-300">+58 (276) 000-0000</p>
-              <p className="text-neutral-300">info@bucaresuite.com</p>
+            <address className="not-italic text-xs text-neutral-400 space-y-2 leading-relaxed whitespace-pre-line">
+              <p>{c.address}</p>
+              <p className="pt-2 text-neutral-300">{c.phone}</p>
+              <p className="text-neutral-300">{c.email}</p>
             </address>
           </div>
+
 
           {/* Action */}
           <div>

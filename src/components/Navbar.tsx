@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ArrowUpRight, Menu, X, Phone } from "lucide-react";
+import { ArrowUpRight, Menu, X, Phone, LayoutDashboard, User, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface NavbarProps {
@@ -8,7 +8,27 @@ interface NavbarProps {
 
 export function Navbar({ transparent = false }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
   const location = useLocation();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+      if (token) {
+        setIsAuthenticated(true);
+        if (user) {
+          try {
+            const parsed = JSON.parse(user);
+            setUserEmail(parsed.email || "");
+          } catch (e) {
+            console.error("Error parsing user", e);
+          }
+        }
+      }
+    }
+  }, []);
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -32,7 +52,9 @@ export function Navbar({ transparent = false }: NavbarProps) {
     { name: "Residencias", href: "/residencias" },
     { name: "Áreas", href: "/areas" },
     { name: "Contacto", href: "/contacto" },
-    { name: "Ingresar", href: "/login" },
+    ...(isAuthenticated
+      ? [{ name: "Dashboard", href: "/dashboard", isDashboard: true }]
+      : [{ name: "Ingresar", href: "/login", isDashboard: false }]),
   ];
 
   return (
@@ -49,7 +71,7 @@ export function Navbar({ transparent = false }: NavbarProps) {
           <img
             src="/logo.png"
             alt="Bucare Suite"
-            className="h-11 sm:h-13 md:h-15 w-auto transition-transform duration-300 group-hover:scale-105 brightness-0 invert"
+            className="h-14 sm:h-18 md:h-22 w-auto transition-transform duration-300 group-hover:scale-105 brightness-0 invert object-contain"
           />
         </Link>
 
@@ -61,12 +83,13 @@ export function Navbar({ transparent = false }: NavbarProps) {
               <Link
                 key={link.href}
                 to={link.href}
-                className={`relative py-1 text-[18px] font-medium tracking-wide transition-all duration-300 text-[#f5f2ec] ${
+                className={`relative py-1 text-[18px] font-medium tracking-wide transition-all duration-300 text-[#f5f2ec] flex items-center gap-1.5 ${
                   isActive
                     ? "font-bold text-[#f5f2ec]"
                     : "opacity-80 hover:opacity-100 hover:text-white"
-                }`}
+                } ${link.isDashboard ? "text-accent font-semibold" : ""}`}
               >
+                {link.isDashboard && <LayoutDashboard className="w-4 h-4 text-accent" />}
                 <span>{link.name}</span>
                 {isActive && (
                   <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#f5f2ec] rounded-full animate-fade-in" />
@@ -77,22 +100,33 @@ export function Navbar({ transparent = false }: NavbarProps) {
         </nav>
 
         {/* CTA Button & Mobile Toggle */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <a
             href="tel:+584242831342"
             className="hidden lg:flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border border-white/20 bg-white/5 text-[#f5f2ec] hover:bg-white/15 hover:border-white/40 transition-all duration-300"
           >
-            <Phone className="w-3.5 h-3.5 text-primary" />
+            <Phone className="w-3.5 h-3.5 text-accent" />
             <span>0424 283 1342</span>
           </a>
 
-          <Link
-            to="/contacto"
-            className="hidden sm:inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-[0.15em] border border-[#f5f2ec]/60 text-[#f5f2ec] hover:bg-[#f5f2ec] hover:text-neutral-950 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] group"
-          >
-            <span>Reservar Visita</span>
-            <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider border border-primary bg-primary text-white hover:bg-primary/90 transition-all duration-300 shadow-sm hover:scale-[1.02]"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="hidden sm:inline">Mi Dashboard</span>
+              <span className="sm:hidden">Dashboard</span>
+            </Link>
+          ) : (
+            <Link
+              to="/contacto"
+              className="hidden sm:inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-[0.15em] border border-[#f5f2ec]/60 text-[#f5f2ec] hover:bg-[#f5f2ec] hover:text-neutral-950 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] group"
+            >
+              <span>Reservar Visita</span>
+              <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </Link>
+          )}
 
           {/* Mobile Hamburger Button */}
           <button
@@ -111,7 +145,7 @@ export function Navbar({ transparent = false }: NavbarProps) {
           {/* Mobile Drawer Top */}
           <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
             <Link to="/" className="flex items-center" onClick={() => setIsOpen(false)}>
-              <img src="/logo.png" alt="Bucare Suite" className="h-10 w-auto brightness-0 invert" />
+              <img src="/logo.png" alt="Bucare Suite" className="h-14 w-auto brightness-0 invert object-contain" />
             </Link>
             <button
               onClick={() => setIsOpen(false)}
@@ -122,12 +156,25 @@ export function Navbar({ transparent = false }: NavbarProps) {
             </button>
           </div>
 
+          {/* User info header if logged in */}
+          {isAuthenticated && userEmail && (
+            <div className="mt-4 p-3 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-accent text-neutral-950 font-bold flex items-center justify-center text-xs">
+                {userEmail[0].toUpperCase()}
+              </div>
+              <div className="flex flex-col truncate">
+                <span className="text-xs font-semibold text-[#f5f2ec] truncate">{userEmail}</span>
+                <span className="text-[10px] text-accent font-medium">Sesión Activa</span>
+              </div>
+            </div>
+          )}
+
           {/* Navigation Links */}
           <div className="flex flex-col gap-6 my-auto py-6">
             <span className="text-[11px] tracking-[0.25em] uppercase text-neutral-400 font-semibold">
               Menú Principal
             </span>
-            <nav className="flex flex-col gap-4">
+            <nav className="flex flex-col gap-3">
               {navLinks.map((link, index) => {
                 const isActive = location.pathname === link.href;
                 return (
@@ -153,15 +200,26 @@ export function Navbar({ transparent = false }: NavbarProps) {
           </div>
 
           {/* Footer Info & CTA */}
-          <div className="flex flex-col gap-4 pt-4 border-t border-neutral-800">
-            <Link
-              to="/contacto"
-              onClick={() => setIsOpen(false)}
-              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full border border-[#f5f2ec] bg-[#f5f2ec] text-neutral-950 font-bold text-xs uppercase tracking-widest shadow-md transition-opacity hover:opacity-90 text-center"
-            >
-              <span>Reservar Visita Privada</span>
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
+          <div className="flex flex-col gap-3 pt-4 border-t border-neutral-800">
+            {isAuthenticated ? (
+              <Link
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-full border border-primary bg-primary text-white font-bold text-xs uppercase tracking-widest shadow-md transition-opacity hover:bg-primary/90 text-center"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Ir a Mi Panel de Control</span>
+              </Link>
+            ) : (
+              <Link
+                to="/contacto"
+                onClick={() => setIsOpen(false)}
+                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full border border-[#f5f2ec] bg-[#f5f2ec] text-neutral-950 font-bold text-xs uppercase tracking-widest shadow-md transition-opacity hover:opacity-90 text-center"
+              >
+                <span>Reservar Visita Privada</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </Link>
+            )}
 
             <div className="flex items-center justify-between text-[11px] text-neutral-400 uppercase tracking-widest pt-1">
               <span>San Cristóbal</span>

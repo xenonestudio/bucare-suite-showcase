@@ -8,7 +8,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 5000,
-        CORS_ORIGIN: 'http://bucaresuite.ddns.net,https://bucaresuite.ddns.net,http://35.254.151.234',
+        CORS_ORIGIN: 'http://bucaredemo.ddns.net,https://bucaredemo.ddns.net,http://35.254.151.234',
         DATABASE_URL: 'file:./prod.db',
         JWT_SECRET: 'production_super_secret_key_change_me_later_1234'
       }
