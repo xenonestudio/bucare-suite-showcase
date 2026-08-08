@@ -1067,14 +1067,36 @@ export function DashboardConfiguracion() {
                             />
                           </div>
 
-                          {/* Distribución Interna */}
+                          {/* Distribución Interna — drag & drop */}
                           <div className="pt-2 border-t border-white/5 space-y-2">
-                            <Label className="text-[11px] font-bold" style={{ color: "var(--dash-accent)" }}>Distribución Interna</Label>
+                            <Label className="text-[11px] font-bold" style={{ color: "var(--dash-accent)" }}>
+                              Distribución Interna <span className="font-normal opacity-50 ml-1">(arrastra ⠿ para reordenar)</span>
+                            </Label>
                             <div className="space-y-1.5">
                               {(mod.distribution || []).map((item: string, dIdx: number) => (
-                                <div key={dIdx} className="flex gap-1.5 items-center">
+                                <div
+                                  key={dIdx}
+                                  draggable
+                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", `${idx}:${dIdx}`)}
+                                  onDragOver={(e) => e.preventDefault()}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    const [srcModIdx, srcDIdx] = e.dataTransfer.getData("text/plain").split(":").map(Number);
+                                    if (srcModIdx !== idx || srcDIdx === dIdx) return;
+                                    const newMods = [...siteForm.apartamentos.models];
+                                    const dist = [...(newMods[idx].distribution || [])];
+                                    const [removed] = dist.splice(srcDIdx, 1);
+                                    dist.splice(dIdx, 0, removed);
+                                    newMods[idx] = { ...newMods[idx], distribution: dist };
+                                    setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                  }}
+                                  className="flex gap-1.5 items-center group"
+                                  style={{ cursor: "grab" }}
+                                >
+                                  <span className="text-sm shrink-0 select-none" style={{ color: "var(--dash-muted)", cursor: "grab", lineHeight: 1 }}>⠿</span>
                                   <Input
                                     value={item}
+                                    draggable={false}
                                     onChange={(e) => {
                                       const newMods = [...siteForm.apartamentos.models];
                                       const dist = [...(newMods[idx].distribution || [])];
@@ -1109,6 +1131,7 @@ export function DashboardConfiguracion() {
                               >+ Agregar ítem</button>
                             </div>
                           </div>
+
 
                           {/* Sección: Financiamiento y Costos */}
                           <div className="pt-2 border-t border-white/5 space-y-2">
