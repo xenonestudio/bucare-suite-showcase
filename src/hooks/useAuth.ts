@@ -7,7 +7,7 @@ import { getAuthState, type AuthState } from "@/lib/auth";
  * (e.g. after login/logout in another tab).
  */
 export function useAuth(): AuthState {
-  const [state, setState] = useState<AuthState>(() => getAuthState());
+  const [state, setState] = useState<AuthState>({ token: null, user: null, isAuthenticated: false });
 
   useEffect(() => {
     // Sync on mount (handles SSR hydration mismatch)

@@ -100,41 +100,61 @@ function DashboardIndex() {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingBottom: "48px" }}>
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", height: "320px", flexShrink: 0 }}>
-        <img
-          src="/modelos/Imagen_modelo01.jpg"
-          alt="Bucare Suite"
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        />
-        <div className="hero-overlay" style={{ position: "absolute", inset: 0 }} />
-
-        {/* Title */}
-        <div style={{ position: "absolute", bottom: "24px", left: "28px", right: "28px" }}>
-          <p style={{ color: "var(--dash-accent)", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "6px" }}>
-            Panel de Control
-          </p>
-          <h1 style={{ color: "var(--dash-text)", fontFamily: "var(--font-display)", fontSize: "clamp(1.6rem,4vw,2.8rem)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1, margin: 0 }}>
-            Bucare Suite &amp; Plaza
-          </h1>
-          <p style={{ color: "rgba(232,237,233,0.65)", fontSize: "0.82rem", marginTop: "6px" }}>
-            Gestión Inmobiliaria · {new Date().toLocaleDateString("es-VE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-          </p>
+      <div style={{ borderRadius: "20px", overflow: "hidden", flexShrink: 0 }}>
+        {/* Image + text overlay */}
+        <div style={{ position: "relative", height: "clamp(180px, 35vw, 280px)" }}>
+          <img
+            src="/modelos/Imagen_modelo01.jpg"
+            alt="Bucare Suite"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+          <div className="hero-overlay" style={{ position: "absolute", inset: 0 }} />
+          <div style={{ position: "absolute", bottom: "20px", left: "20px", right: "20px" }}>
+            <p style={{ color: "var(--dash-accent)", fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "4px" }}>
+              Panel de Control
+            </p>
+            <h1 style={{ color: "var(--dash-text)", fontFamily: "var(--font-display)", fontSize: "clamp(1.2rem,4vw,2.4rem)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1, margin: 0 }}>
+              Bucare Suite &amp; Plaza
+            </h1>
+            <p style={{ color: "rgba(232,237,233,0.65)", fontSize: "0.75rem", marginTop: "6px" }} className="hidden sm:block">
+              Gestión Inmobiliaria · {new Date().toLocaleDateString("es-VE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </p>
+          </div>
         </div>
-
-        {/* Floating stat cards */}
-        <div style={{ position: "absolute", top: "20px", right: "20px", display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+        {/* Stat cards below image on mobile, overlay on desktop */}
+        <div
+          className="lg:hidden"
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", padding: "12px", background: "var(--dash-card)", borderTop: "1px solid var(--dash-border)" }}
+        >
           {[
-            { label: "Unidades Libres", value: "24",   sub: "disponibles hoy",    icon: Home },
-            { label: "Ocupación",       value: "89%",  sub: "tasa actual",         icon: Percent },
+            { label: "Unidades Libres", value: "24",  sub: "disponibles hoy", icon: Home },
+            { label: "Ocupación",       value: "89%", sub: "tasa actual",      icon: Percent },
+          ].map(({ label, value, sub, icon: Icon }) => (
+            <div key={label} style={{ padding: "12px", background: "var(--dash-sidebar)", borderRadius: "12px", border: "1px solid var(--dash-border)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "4px" }}>
+                <Icon size={11} style={{ color: "var(--dash-accent)" }} />
+                <span style={{ color: "var(--dash-muted)", fontSize: "0.58rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{label}</span>
+              </div>
+              <div style={{ color: "var(--dash-text)", fontFamily: "var(--font-display)", fontSize: "1.4rem", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1 }}>{value}</div>
+              <div style={{ color: "var(--dash-muted)", fontSize: "0.6rem", marginTop: "3px" }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+        {/* Floating stat cards — desktop only */}
+        <div
+          className="hidden lg:flex"
+          style={{ position: "absolute", top: "20px", right: "20px", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}
+        >
+          {[
+            { label: "Unidades Libres", value: "24",  sub: "disponibles hoy", icon: Home },
+            { label: "Ocupación",       value: "89%", sub: "tasa actual",      icon: Percent },
           ].map(({ label, value, sub, icon: Icon }) => (
             <div key={label} className="glass-card" style={{ padding: "14px 18px", minWidth: "130px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
                 <Icon size={12} style={{ color: "var(--dash-accent)" }} />
                 <span style={{ color: "var(--dash-muted)", fontSize: "0.62rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{label}</span>
               </div>
-              <div style={{ color: "var(--dash-text)", fontFamily: "var(--font-display)", fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1 }}>
-                {value}
-              </div>
+              <div style={{ color: "var(--dash-text)", fontFamily: "var(--font-display)", fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1 }}>{value}</div>
               <div style={{ color: "var(--dash-muted)", fontSize: "0.62rem", marginTop: "4px" }}>{sub}</div>
             </div>
           ))}
@@ -196,7 +216,7 @@ function DashboardIndex() {
       </div>
 
       {/* ── CHART + CITAS ────────────────────────────────────────────────── */}
-      <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "1fr 1fr" }} className="lg:grid-cols-[3fr_2fr]">
+      <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: "20px" }}>
 
         {/* Area Chart */}
         {["SUPERADMIN","CONTADOR"].includes(userRole) && (
@@ -329,7 +349,7 @@ function DashboardIndex() {
             {
               name: "Bucare Suite",
               img: "/modelos/Imagen_modelo02.jpg",
-              tipo: "Residencias de Lujo",
+              tipo: "Apartamentos de Lujo",
               precio: "Desde $148,000",
               vendido: 72,
               unidades: "48 unidades · 12 disponibles",

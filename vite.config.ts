@@ -16,7 +16,7 @@ export default defineConfig({
     preset: "node-server",
     prerender: {
       crawlLinks: true,
-      routes: ["/", "/residencias", "/areas", "/contacto", "/login", "/registro", "/comercial", "/dashboard/chat"],
+      routes: ["/", "/apartamentos", "/areas", "/contacto", "/login", "/registro", "/comercial", "/dashboard/chat"],
     },
   } as any,
   vite: {

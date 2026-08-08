@@ -117,10 +117,23 @@ export function FloatingChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  useEffect(() => {
+    // Show tooltip after 4 seconds to catch attention dynamically
+    const timer = setTimeout(() => {
+      if (!isOpen) {
+        setShowTooltip(true);
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
+
   if (!mounted) return null;
 
   const handleWidgetClick = () => {
     setIsOpen((prev) => !prev);
+    setShowTooltip(false);
   };
 
   const handleAuthSuccess = async (data: { token: string; user: any }) => {
@@ -235,6 +248,61 @@ export function FloatingChatWidget() {
 
   return (
     <>
+      {/* Tooltip / Mensaje de sugerencia dinámico */}
+      {showTooltip && !isOpen && (
+        <div
+          onClick={() => {
+            setIsOpen(true);
+            setShowTooltip(false);
+          }}
+          style={{
+            position: "fixed",
+            bottom: "100px",
+            right: "28px",
+            zIndex: 9998,
+            width: "250px",
+            background: "#1E1E1E",
+            color: "#F0EDE8",
+            border: project === "BUCARE_PLAZA" ? "1px solid rgba(74, 222, 128, 0.4)" : "1px solid rgba(225, 182, 104, 0.4)",
+            borderRadius: "14px",
+            padding: "12px 16px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
+            fontSize: "0.82rem",
+            cursor: "pointer",
+            animation: "fadeInUp 0.4s ease-out",
+            lineHeight: "1.4",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+            <span style={{ fontWeight: "700", color: project === "BUCARE_PLAZA" ? "#4ADE80" : "#E1B668", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Asistente IA</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowTooltip(false);
+              }}
+              style={{ background: "none", border: "none", color: "#8A8A8A", padding: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+          ¿Tienes alguna duda sobre el proyecto? ¡Consúltame aquí en tiempo real!
+          {/* Pequeño indicador/triángulo inferior apuntando al botón */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "-6px",
+              right: "24px",
+              width: "12px",
+              height: "12px",
+              background: "#1E1E1E",
+              borderRight: project === "BUCARE_PLAZA" ? "1px solid rgba(74, 222, 128, 0.4)" : "1px solid rgba(225, 182, 104, 0.4)",
+              borderBottom: project === "BUCARE_PLAZA" ? "1px solid rgba(74, 222, 128, 0.4)" : "1px solid rgba(225, 182, 104, 0.4)",
+              transform: "rotate(45deg)",
+            }}
+          />
+        </div>
+      )}
+
       {/* Botón flotante inferior derecho */}
       <button
         onClick={handleWidgetClick}
@@ -260,7 +328,7 @@ export function FloatingChatWidget() {
           transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       >
-        {isOpen ? <X size={26} /> : <Sparkles size={26} />}
+        {isOpen ? <X size={26} /> : <MessageSquare size={26} />}
       </button>
 
       {/* Drawer / Ventana flotante de Chat */}

@@ -4,13 +4,12 @@ import {
   LayoutDashboard, Calendar, Users, FileText, Menu, X, Building2,
   ChevronRight, Home, MessageSquare
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { clearAuth, getInitials } from "@/lib/auth";
 
@@ -25,35 +24,57 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 const NAV_ITEMS = [
-  { to: "/dashboard",          icon: LayoutDashboard, label: "Dashboard",   roles: [] },
-  { to: "/dashboard/citas",    icon: Calendar,        label: "Citas",        roles: [] },
-  { to: "/dashboard/clientes", icon: Users,           label: "Clientes",     roles: ["SUPERADMIN","ADMIN","CONTADOR","VENTAS"] },
-  { to: "/dashboard/chat",          icon: MessageSquare,   label: "Asistente IA", roles: ["SUPERADMIN","ADMIN"] },
-  { to: "/dashboard/configuracion", icon: Settings,         label: "Configuración",roles: ["SUPERADMIN","ADMIN"] },
-  { to: "/dashboard",          icon: FileText,        label: "Reportes",     roles: ["SUPERADMIN","CONTADOR"] },
+  { to: "/dashboard",          icon: LayoutDashboard, label: "Dashboard",    roles: [] },
+  { to: "/dashboard/citas",    icon: Calendar,        label: "Citas",         roles: [] },
+  { to: "/dashboard/clientes", icon: Users,           label: "Clientes",      roles: ["SUPERADMIN","ADMIN","CONTADOR","VENTAS"] },
+  { to: "/dashboard/chat",     icon: MessageSquare,   label: "Asistente IA",  roles: ["SUPERADMIN","ADMIN"] },
+  { to: "/dashboard/configuracion", icon: Settings,   label: "Configuración", roles: ["SUPERADMIN","ADMIN"] },
+  { to: "/dashboard",          icon: FileText,        label: "Reportes",      roles: ["SUPERADMIN","CONTADOR"] },
 ];
+
+const SIDEBAR_EXPANDED = 240;
+const SIDEBAR_COLLAPSED = 72;
+const DESKTOP_BREAKPOINT = 1024;
 
 function DashboardLayout() {
   const { user } = useAuth();
   const userEmail = user?.email || "usuario@bucare.com";
-  const userRole = user?.role || "CLIENTE";
+  const userRole  = user?.role  || "CLIENTE";
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed,   setCollapsed]   = useState(false);
+  const [isDesktop,   setIsDesktop]   = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
 
   const routerState = useRouterState();
-  const router = useRouter();
+  const router      = useRouter();
   const currentPath = routerState.location.pathname;
 
-  useEffect(() => {
+  // Responsive detection with resize listener
+  const checkDesktop = useCallback(() => {
     if (typeof window !== "undefined") {
-      // Auto-collapse on small screens
-      const desktop = window.innerWidth >= 1024;
+      const desktop = window.innerWidth >= DESKTOP_BREAKPOINT;
       setIsDesktop(desktop);
-      if (!desktop) setCollapsed(true);
+      if (!desktop) {
+        setCollapsed(false); // reset collapse on mobile
+        setMobileOpen(false);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, [checkDesktop]);
+
+  // Close drawer on route change
+  useEffect(() => { setMobileOpen(false); }, [currentPath]);
+
+  // Lock scroll when mobile drawer open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
 
   const handleLogout = () => {
     clearAuth();
@@ -64,7 +85,8 @@ function DashboardLayout() {
     n.roles.length === 0 || n.roles.includes(userRole)
   );
 
-  const sidebarW = collapsed ? "72px" : "240px";
+  const sidebarW = collapsed ? `${SIDEBAR_COLLAPSED}px` : `${SIDEBAR_EXPANDED}px`;
+  const showLabels = !collapsed || mobileOpen;
 
   return (
     <div className="dash-shell" style={{ fontFamily: "var(--font-sans)" }}>
@@ -72,26 +94,43 @@ function DashboardLayout() {
       {/* ── Mobile overlay ── */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          style={{
+            position: "fixed", inset: 0, zIndex: 40,
+            background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+          }}
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* ── Sidebar ── */}
       <aside
-        className="dash-sidebar fixed top-0 left-0 h-full z-50 flex flex-col"
+        className="dash-sidebar"
         style={{
-          width: mobileOpen ? "240px" : (isDesktop ? sidebarW : "0px"),
+          position: "fixed",
+          top: 0, left: 0,
+          height: "100%",
+          zIndex: 50,
+          display: "flex",
+          flexDirection: "column",
+          // Desktop: always visible, animated width
+          // Mobile: slide in from left
+          width: isDesktop ? sidebarW : `${SIDEBAR_EXPANDED}px`,
+          transform: isDesktop ? "translateX(0)" : (mobileOpen ? "translateX(0)" : "translateX(-100%)"),
+          transition: "width 0.25s ease, transform 0.28s cubic-bezier(0.4,0,0.2,1)",
         }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 h-16 border-b shrink-0"
-          style={{ borderColor: "var(--dash-border)" }}>
-          <div className="flex-shrink-0 h-9 w-9 rounded-xl flex items-center justify-center"
-            style={{ background: "var(--dash-accent)" }}>
+        <div
+          className="flex items-center gap-3 px-4 shrink-0"
+          style={{ height: "64px", borderBottom: "1px solid var(--dash-border)" }}
+        >
+          <div
+            className="flex-shrink-0 rounded-xl flex items-center justify-center"
+            style={{ width: "36px", height: "36px", background: "var(--dash-accent)" }}
+          >
             <span style={{ color: "#0D1810", fontWeight: 900, fontSize: "1.1rem", fontFamily: "var(--font-display)" }}>B</span>
           </div>
-          {(!collapsed || mobileOpen) && (
+          {showLabels && (
             <div className="flex flex-col min-w-0 animate-fade-in">
               <span style={{ color: "var(--dash-text)", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.9rem", lineHeight: 1 }}>
                 Bucare
@@ -101,12 +140,24 @@ function DashboardLayout() {
               </span>
             </div>
           )}
+          {/* Close button — mobile only */}
+          {!isDesktop && (
+            <button
+              onClick={() => setMobileOpen(false)}
+              aria-label="Cerrar menú"
+              style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", padding: "4px", color: "var(--dash-muted)" }}
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
 
         {/* Project Pill */}
-        {(!collapsed || mobileOpen) && (
-          <div className="mx-3 mt-4 mb-2 px-3 py-2 rounded-lg flex items-center gap-2 animate-fade-in"
-            style={{ background: "var(--dash-accent-dim)", border: "1px solid var(--dash-border-hover)" }}>
+        {showLabels && (
+          <div
+            className="mx-3 mt-4 mb-2 px-3 py-2 rounded-lg flex items-center gap-2 animate-fade-in"
+            style={{ background: "var(--dash-accent-dim)", border: "1px solid var(--dash-border-hover)" }}
+          >
             <Building2 size={14} style={{ color: "var(--dash-accent)", flexShrink: 0 }} />
             <span style={{ color: "var(--dash-accent)", fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.05em" }}>
               PROYECTO ACTIVO
@@ -115,7 +166,7 @@ function DashboardLayout() {
         )}
 
         {/* Nav */}
-        <nav className="flex flex-col gap-1 px-2 mt-2 flex-1 overflow-y-auto">
+        <nav className="flex flex-col gap-1 px-2 mt-2 overflow-y-auto" style={{ flex: 1 }}>
           {visibleNav.map((item) => {
             const isActive = currentPath === item.to;
             return (
@@ -123,8 +174,9 @@ function DashboardLayout() {
                 key={item.label}
                 to={item.to}
                 onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group"
+                className="flex items-center gap-3 rounded-xl transition-all duration-200"
                 style={{
+                  padding: "10px 12px",
                   background: isActive ? "var(--dash-accent-dim)" : "transparent",
                   border: `1px solid ${isActive ? "var(--dash-border-hover)" : "transparent"}`,
                   textDecoration: "none",
@@ -134,18 +186,21 @@ function DashboardLayout() {
                   size={18}
                   style={{ color: isActive ? "var(--dash-accent)" : "var(--dash-muted)", flexShrink: 0, transition: "color 0.2s" }}
                 />
-                {(!collapsed || mobileOpen) && (
+                {showLabels && (
                   <span style={{
                     color: isActive ? "var(--dash-text)" : "var(--dash-muted)",
                     fontSize: "0.82rem",
                     fontWeight: isActive ? 600 : 400,
                     transition: "color 0.2s",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}>
                     {item.label}
                   </span>
                 )}
-                {isActive && (!collapsed || mobileOpen) && (
-                  <ChevronRight size={14} style={{ color: "var(--dash-accent)", marginLeft: "auto" }} />
+                {isActive && showLabels && (
+                  <ChevronRight size={14} style={{ color: "var(--dash-accent)", marginLeft: "auto", flexShrink: 0 }} />
                 )}
               </Link>
             );
@@ -153,22 +208,17 @@ function DashboardLayout() {
         </nav>
 
         {/* User Footer */}
-        <div className="px-2 pb-4 mt-auto border-t pt-3" style={{ borderColor: "var(--dash-border)" }}>
-          {(!collapsed || mobileOpen) && (
+        <div className="px-2 pb-4 mt-auto pt-3" style={{ borderTop: "1px solid var(--dash-border)" }}>
+          {showLabels && (
             <div className="px-3 py-2 mb-2 animate-fade-in">
               <p style={{ color: "var(--dash-text)", fontSize: "0.75rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {userEmail}
               </p>
               <span style={{
-                display: "inline-block",
-                marginTop: "4px",
-                padding: "1px 8px",
-                borderRadius: "99px",
-                fontSize: "0.6rem",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                background: "var(--dash-accent-dim)",
-                color: "var(--dash-accent)",
+                display: "inline-block", marginTop: "4px",
+                padding: "1px 8px", borderRadius: "99px",
+                fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.08em",
+                background: "var(--dash-accent-dim)", color: "var(--dash-accent)",
                 border: "1px solid var(--dash-border-hover)",
               }}>
                 {userRole}
@@ -178,13 +228,13 @@ function DashboardLayout() {
           <button
             onClick={handleLogout}
             aria-label="Cerrar Sesión"
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-colors"
-            style={{ background: "transparent", border: "none", cursor: "pointer" }}
+            className="w-full flex items-center gap-3 rounded-xl transition-colors"
+            style={{ padding: "8px 12px", background: "transparent", border: "none", cursor: "pointer" }}
             onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,80,80,0.08)")}
             onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
           >
             <LogOut size={16} style={{ color: "#e05555", flexShrink: 0 }} />
-            {(!collapsed || mobileOpen) && (
+            {showLabels && (
               <span style={{ color: "#e05555", fontSize: "0.82rem" }}>Cerrar Sesión</span>
             )}
           </button>
@@ -193,8 +243,10 @@ function DashboardLayout() {
         {/* Collapse toggle — desktop only */}
         <button
           aria-label={collapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
-          className="hidden lg:flex absolute -right-3 top-20 items-center justify-center w-6 h-6 rounded-full z-10 transition-colors"
+          className="hidden lg:flex absolute items-center justify-center rounded-full z-10 transition-colors"
           style={{
+            top: "76px", right: "-12px",
+            width: "24px", height: "24px",
             background: "var(--dash-sidebar)",
             border: "1px solid var(--dash-border-hover)",
             cursor: "pointer",
@@ -215,24 +267,26 @@ function DashboardLayout() {
       >
         {/* Top bar */}
         <header
-          className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 md:px-6"
+          className="sticky top-0 z-30 flex items-center justify-between"
           style={{
-            background: "rgba(13,24,16,0.85)",
+            height: "64px",
+            padding: "0 16px",
+            background: "rgba(13,24,16,0.9)",
             backdropFilter: "blur(12px)",
             borderBottom: "1px solid var(--dash-border)",
           }}
         >
-          {/* Mobile menu + breadcrumb */}
+          {/* Mobile hamburger + breadcrumb */}
           <div className="flex items-center gap-3">
             <button
               aria-label="Abrir menú"
-              className="lg:hidden p-2 rounded-lg"
-              style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", cursor: "pointer" }}
+              className="lg:hidden rounded-lg transition-colors"
+              style={{ padding: "8px", background: "var(--dash-card)", border: "1px solid var(--dash-border)", cursor: "pointer" }}
               onClick={() => setMobileOpen(true)}
             >
               <Menu size={18} style={{ color: "var(--dash-text)" }} />
             </button>
-            <div className="hidden md:flex items-center gap-2 text-xs" style={{ color: "var(--dash-muted)" }}>
+            <div className="hidden sm:flex items-center gap-2 text-xs" style={{ color: "var(--dash-muted)" }}>
               <Home size={12} />
               <span>/</span>
               <span style={{ color: "var(--dash-text)", fontWeight: 500 }}>
@@ -247,7 +301,7 @@ function DashboardLayout() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
-            {/* Live pill */}
+            {/* Live pill — hidden on very small screens */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
               style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", color: "var(--dash-muted)" }}>
               <span className="relative flex h-2 w-2">
@@ -257,7 +311,7 @@ function DashboardLayout() {
               En Vivo
             </div>
 
-            {/* Quick action */}
+            {/* Quick action — hidden on very small screens */}
             {userRole !== "CLIENTE" && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -285,10 +339,11 @@ function DashboardLayout() {
             )}
 
             {/* Bell */}
-            <button 
+            <button
               aria-label="Ver notificaciones"
-              className="relative p-2 rounded-lg transition-colors"
-              style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", cursor: "pointer" }}>
+              className="relative rounded-lg transition-colors"
+              style={{ padding: "8px", background: "var(--dash-card)", border: "1px solid var(--dash-border)", cursor: "pointer" }}
+            >
               <Bell size={15} style={{ color: "var(--dash-text)" }} />
               <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full"
                 style={{ background: "var(--dash-accent)" }} />
@@ -297,8 +352,8 @@ function DashboardLayout() {
             {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-1.5 rounded-xl transition-colors"
-                  style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", cursor: "pointer" }}>
+                <button className="flex items-center gap-2 rounded-xl transition-colors"
+                  style={{ padding: "6px", background: "var(--dash-card)", border: "1px solid var(--dash-border)", cursor: "pointer" }}>
                   <Avatar className="h-7 w-7">
                     <AvatarFallback style={{ background: "var(--dash-accent)", color: "#0D1810", fontSize: "0.65rem", fontWeight: 800 }}>
                       {getInitials(userEmail)}
@@ -347,7 +402,7 @@ function DashboardLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6 max-w-[1400px] w-full mx-auto animate-fade-in">
+        <main className="flex-1 p-4 md:p-6 w-full mx-auto animate-fade-in" style={{ maxWidth: "1400px" }}>
           <Outlet />
         </main>
       </div>

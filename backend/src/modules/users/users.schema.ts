@@ -39,8 +39,9 @@ export const updateUserSchema = z.object({
   }),
   body: z.object({
     fullName: z.string().min(2, 'El nombre debe contener al menos 2 caracteres').optional(),
-    birthDate: z.string().regex(birthDateRegex, 'La fecha debe estar en formato YYYY-MM-DD').optional(),
-    phoneNumber: z.string().regex(phoneRegex, 'El número de teléfono no es válido').optional(),
+    birthDate: z.string().optional(),
+    phoneNumber: z.string().optional(),
+    avatarUrl: z.string().optional(),
     role: userRolesEnum.optional(),
     isActive: z.boolean().optional(),
   }),

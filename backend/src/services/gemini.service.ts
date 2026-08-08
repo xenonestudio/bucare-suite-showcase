@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.config.js';
+import { whatsappService } from './whatsapp.service.js';
 
 /**
  * Servicio de IA Gemini con Pool de API Keys, Rotación Inteligente, Selección Dinámica de Modelos,
@@ -40,7 +41,7 @@ export interface GeminiModelInfo {
 }
 
 const DEFAULT_PROMPTS = {
-  BUCARE_SUITE: `Eres el Asistente Virtual Inteligente de Bucare Suite (Residencias de Lujo en San Cristóbal, Nueva Guayana).
+  BUCARE_SUITE: `Eres el Asistente Virtual Inteligente de Bucare Suite (Apartamentos de Lujo en San Cristóbal, Nueva Guayana).
 Tu objetivo es atender amablemente al cliente, responder sus dudas sobre los apartamentos de lujo, amenidades, acabados, ubicación y precios.
 Sé profesional, cálido, elegante y servicial. Guía al cliente a agendar una visita o consultar disponibilidad.`,
 
@@ -204,6 +205,16 @@ async function executeAgendarCita(args: any, options: GenerateAiOptions): Promis
 
     console.log(`[GeminiService] Cita agendada con éxito ID: ${createdCita.id} para ${clientName} fecha: ${dateFormatted}`);
 
+    // Notificar al cliente vía WhatsApp si hay teléfono disponible
+    const phoneToNotify = args.contactoCliente || userEmail || '';
+    if (phoneToNotify) {
+      whatsappService.sendAppointmentNotification(phoneToNotify, {
+        fecha: dateFormatted,
+        tipoPropiedad: createdCita.tipoPropiedad,
+        notas: executiveNotes,
+      }).catch(err => console.error('[GeminiService] Error notificando cita por WhatsApp:', err));
+    }
+
     return JSON.stringify({
       status: 'SUCCESS',
       citaId: createdCita.id,
@@ -249,7 +260,7 @@ Cuando el cliente exprese que desea agendar una cita, visita o inspección a Buc
    - Perfil Profesional / Ocupación: Si el cliente mencionó su trabajo, profesión, negocio, empresa o cargo para evaluar su perfil y capacidad de adquisición.
    - Requerimientos especiales y dudas: Requerimientos adicionales o inquietudes planteadas por el cliente.`;
 
-  const fullSystemInstruction = `${basePrompt}\n\n${userContext}${citaInstruction}\nUbicación actual en la web: ${project === 'BUCARE_PLAZA' ? 'Bucare Plaza Comercial' : 'Bucare Suite Residencial'}.`;
+  const fullSystemInstruction = `${basePrompt}\n\n${userContext}${citaInstruction}\nUbicación actual en la web: ${project === 'BUCARE_PLAZA' ? 'Bucare Plaza Comercial' : 'Bucare Suite Apartamentos'}.`;
 
   const contents: any[] = [
     {
@@ -309,7 +320,7 @@ Cuando el cliente exprese que desea agendar una cita, visita o inspección a Buc
             const resultObj = JSON.parse(resultStr);
 
             if (resultObj.status === 'SUCCESS') {
-              return `¡Excelente! Tu cita para visitar ${project === 'BUCARE_PLAZA' ? 'Bucare Plaza Comercial' : 'Bucare Suite Residencial'} ha sido agendada con éxito en nuestro sistema para el ${resultObj.fechaFormateada}.\n\nUn asesor comercial se pondrá en contacto contigo para confirmar los detalles.`;
+              return `¡Excelente! Tu cita para visitar ${project === 'BUCARE_PLAZA' ? 'Bucare Plaza Comercial' : 'Bucare Suite Apartamentos'} ha sido agendada con éxito en nuestro sistema para el ${resultObj.fechaFormateada}.\n\nUn asesor comercial se pondrá en contacto contigo para confirmar los detalles.`;
             } else {
               return 'Tu solicitud de cita ha sido recibida. Un asesor comercial se pondrá en contacto contigo para confirmar la fecha disponible.';
             }

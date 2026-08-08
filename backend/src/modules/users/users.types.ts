@@ -51,6 +51,7 @@ export interface IUpdateUserDTO {
   fullName?: string;
   birthDate?: string;
   phoneNumber?: string;
+  avatarUrl?: string;
   role?: UserRole;
   isActive?: boolean;
 }

@@ -16,7 +16,7 @@ export function Footer() {
               <img src="/logo.png" alt="Bucare Suite" className="h-16 md:h-20 w-auto brightness-0 invert object-contain" />
             </Link>
             <p className="text-xs text-neutral-400 leading-relaxed max-w-xs">
-              Residencias contemporáneas de alta gama en San Cristóbal, Nueva Guayana. Arquitectura inteligente y serenidad atemporal.
+              Apartamentos contemporáneos de alta gama en San Cristóbal, Nueva Guayana. Arquitectura inteligente y serenidad atemporal.
             </p>
           </div>
 
@@ -32,8 +32,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/residencias" className="hover:text-white transition-colors">
-                  Residencias
+                <Link to="/apartamentos" className="hover:text-white transition-colors">
+                  Apartamentos
                 </Link>
               </li>
               <li>
@@ -81,7 +81,19 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
-          <p>© 2026 Bucare Suite. Todos los derechos reservados.</p>
+          <div>
+            <p>© 2026 Bucare Suite. Todos los derechos reservados.</p>
+            <p className="mt-1 text-[10px] text-neutral-600">
+              Desarrollado por{" "}
+              <a href="https://www.lexsank.xyz" target="_blank" rel="noopener noreferrer" className="hover:text-neutral-400 transition-colors">
+                LexSank Interactive
+              </a>{" "}
+              -{" "}
+              <a href="https://www.lexsank.xyz" target="_blank" rel="noopener noreferrer" className="hover:text-neutral-400 transition-colors font-medium">
+                www.lexsank.xyz
+              </a>
+            </p>
+          </div>
           <div className="flex gap-6">
             <Link to="/" className="hover:text-neutral-300 transition-colors">
               Privacidad

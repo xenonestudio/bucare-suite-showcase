@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
-import { authenticateJWT, authorizeRoles } from '../../shared/middlewares/auth.middleware.js';
+import { authenticateJWT } from '../../shared/middlewares/auth.middleware.js';
 
 const router = Router();
 
@@ -12,7 +12,7 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // POST /api/v1/upload -> Cargar archivo de imagen en formato base64 / data URL
-router.post('/', authenticateJWT, authorizeRoles('SUPERADMIN' as any, 'ADMIN' as any), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authenticateJWT, async (req: Request, res: Response, next: NextFunction) => {
 
   try {
     const { image, fileName } = req.body;
@@ -22,17 +22,23 @@ router.post('/', authenticateJWT, authorizeRoles('SUPERADMIN' as any, 'ADMIN' as
       return;
     }
 
-    // Extraer base64 y tipo MIME
-    const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    // Extraer base64 y tipo MIME sin expresiones regulares pesadas (previene crash por backtracking en archivos grandes/videos)
     let buffer: Buffer;
     let ext = 'png';
 
-    if (matches && matches.length === 3) {
-      const mimeType = matches[1];
-      ext = mimeType.split('/')[1] || 'png';
-      buffer = Buffer.from(matches[2], 'base64');
+    if (image.startsWith('data:')) {
+      const semiColonIdx = image.indexOf(';');
+      if (semiColonIdx !== -1) {
+        const mimeType = image.substring(5, semiColonIdx);
+        ext = mimeType.split('/')[1] || 'png';
+      }
+      const base64Idx = image.indexOf('base64,');
+      if (base64Idx !== -1) {
+        buffer = Buffer.from(image.substring(base64Idx + 7), 'base64');
+      } else {
+        buffer = Buffer.from(image, 'base64');
+      }
     } else {
-      // Si ya viene como base64 puro
       buffer = Buffer.from(image, 'base64');
     }
 
@@ -48,7 +54,7 @@ router.post('/', authenticateJWT, authorizeRoles('SUPERADMIN' as any, 'ADMIN' as
     const finalFileName = `${cleanFileName}-${uniqueSuffix}.${ext}`;
     const filePath = path.join(uploadsDir, finalFileName);
 
-    fs.writeFileSync(filePath, buffer);
+    await fs.promises.writeFile(filePath, buffer);
 
     const publicUrl = `/uploads/${finalFileName}`;
 

@@ -10,13 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApartamentosRouteImport } from './routes/apartamentos'
 import { Route as AreasRouteImport } from './routes/areas'
 import { Route as ComercialRouteImport } from './routes/comercial'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegistroRouteImport } from './routes/registro'
-import { Route as ResidenciasRouteImport } from './routes/residencias'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardChatRouteImport } from './routes/dashboard.chat'
 import { Route as DashboardCitasRouteImport } from './routes/dashboard.citas'
@@ -27,6 +27,11 @@ import { Route as DashboardPerfilRouteImport } from './routes/dashboard.perfil'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApartamentosRoute = ApartamentosRouteImport.update({
+  id: '/apartamentos',
+  path: '/apartamentos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AreasRoute = AreasRouteImport.update({
@@ -57,11 +62,6 @@ const LoginRoute = LoginRouteImport.update({
 const RegistroRoute = RegistroRouteImport.update({
   id: '/registro',
   path: '/registro',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResidenciasRoute = ResidenciasRouteImport.update({
-  id: '/residencias',
-  path: '/residencias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
@@ -97,13 +97,13 @@ const DashboardPerfilRoute = DashboardPerfilRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/apartamentos': typeof ApartamentosRoute
   '/areas': typeof AreasRoute
   '/comercial': typeof ComercialRoute
   '/contacto': typeof ContactoRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
-  '/residencias': typeof ResidenciasRoute
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/citas': typeof DashboardCitasRoute
   '/dashboard/clientes': typeof DashboardClientesRoute
@@ -113,12 +113,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/apartamentos': typeof ApartamentosRoute
   '/areas': typeof AreasRoute
   '/comercial': typeof ComercialRoute
   '/contacto': typeof ContactoRoute
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
-  '/residencias': typeof ResidenciasRoute
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/citas': typeof DashboardCitasRoute
   '/dashboard/clientes': typeof DashboardClientesRoute
@@ -129,13 +129,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/apartamentos': typeof ApartamentosRoute
   '/areas': typeof AreasRoute
   '/comercial': typeof ComercialRoute
   '/contacto': typeof ContactoRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
-  '/residencias': typeof ResidenciasRoute
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/citas': typeof DashboardCitasRoute
   '/dashboard/clientes': typeof DashboardClientesRoute
@@ -147,13 +147,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/apartamentos'
     | '/areas'
     | '/comercial'
     | '/contacto'
     | '/dashboard'
     | '/login'
     | '/registro'
-    | '/residencias'
     | '/dashboard/chat'
     | '/dashboard/citas'
     | '/dashboard/clientes'
@@ -163,12 +163,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/apartamentos'
     | '/areas'
     | '/comercial'
     | '/contacto'
     | '/login'
     | '/registro'
-    | '/residencias'
     | '/dashboard/chat'
     | '/dashboard/citas'
     | '/dashboard/clientes'
@@ -178,13 +178,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/apartamentos'
     | '/areas'
     | '/comercial'
     | '/contacto'
     | '/dashboard'
     | '/login'
     | '/registro'
-    | '/residencias'
     | '/dashboard/chat'
     | '/dashboard/citas'
     | '/dashboard/clientes'
@@ -195,13 +195,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApartamentosRoute: typeof ApartamentosRoute
   AreasRoute: typeof AreasRoute
   ComercialRoute: typeof ComercialRoute
   ContactoRoute: typeof ContactoRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegistroRoute: typeof RegistroRoute
-  ResidenciasRoute: typeof ResidenciasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -211,6 +211,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/apartamentos': {
+      id: '/apartamentos'
+      path: '/apartamentos'
+      fullPath: '/apartamentos'
+      preLoaderRoute: typeof ApartamentosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/areas': {
@@ -253,13 +260,6 @@ declare module '@tanstack/react-router' {
       path: '/registro'
       fullPath: '/registro'
       preLoaderRoute: typeof RegistroRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/residencias': {
-      id: '/residencias'
-      path: '/residencias'
-      fullPath: '/residencias'
-      preLoaderRoute: typeof ResidenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
@@ -331,13 +331,13 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApartamentosRoute: ApartamentosRoute,
   AreasRoute: AreasRoute,
   ComercialRoute: ComercialRoute,
   ContactoRoute: ContactoRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   RegistroRoute: RegistroRoute,
-  ResidenciasRoute: ResidenciasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

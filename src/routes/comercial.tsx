@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSiteContent } from "@/hooks/useSiteContent";
 import {
   MapPin, Phone, Mail, Instagram, Facebook, ArrowRight,
   ChevronDown, Menu, X, Building2, Users, Layers, Car,
@@ -23,30 +24,7 @@ export const Route = createFileRoute("/comercial")({
   component: BucarePlazaPage,
 });
 
-// ── Data ─────────────────────────────────────────────────────────────────────
-const LOCALES = [
-  { id: "01", nombre: "Hábito Café", categoria: "Gastronomía & Café", img: "/comercial/025.webp", desc: "Experiencia gastronómica curada con los mejores granos de especialidad. Terraza abierta con vista a la plaza.", area: "85 m²", status: "Ancla" },
-  { id: "02", nombre: "Coralia Boutique", categoria: "Moda & Estilo", img: "/comercial/029.webp", desc: "Espacio fashion de alto nivel con selección curada de moda contemporánea y accesorios de diseñador.", area: "65 m²", status: "Activo" },
-  { id: "03", nombre: "Beauty Lab", categoria: "Salud & Belleza", img: "/comercial/030.webp", desc: "Centro de estética y bienestar con los últimos tratamientos dermatológicos y cosméticos de vanguardia.", area: "70 m²", status: "Activo" },
-  { id: "04", nombre: "Motors", categoria: "Automóvil & Lifestyle", img: "/comercial/028.webp", desc: "Showroom premium para vehículos y accesorios de alto rendimiento en un espacio arquitectónico único.", area: "120 m²", status: "Disponible" },
-];
-
-const VENTAJAS = [
-  { num: "01", titulo: "Ubicación Estratégica Premium", desc: "Posicionado en el eje comercial más activo de San Cristóbal, con acceso directo desde las principales vías y visibilidad desde ambas calles laterales. Flujo peatonal estimado de 2,500 personas diarias." },
-  { num: "02", titulo: "Arquitectura Contemporánea de Alto Impacto", desc: "Fachada moderna de concreto, vidrio templado y detalles en madera natural. Un edificio pensado para que cada local tenga presencia visual máxima desde el exterior." },
-  { num: "03", titulo: "Concepto Mixto Comercial + Residencial", desc: "La planta baja alberga locales comerciales y la planta alta oficinas boutique y consultorios. Esto garantiza un flujo constante de clientes residentes de Bucare Suite durante todo el día." },
-  { num: "04", titulo: "Seguridad y Operación 24/7", desc: "CCTV de última generación, personal de vigilancia y control de acceso vehicular. Tu negocio protegido en todo momento con sistemas integrados al edificio." },
-  { num: "05", titulo: "Estacionamiento Privado Exclusivo", desc: "20 puestos de estacionamiento techados con iluminación LED, reservados para clientes y arrendatarios. Sin estrés de parqueo para tus visitantes." },
-];
-
-const STATS = [
-  { valor: "1,200", unidad: "m²", label: "Área Total Construida" },
-  { valor: "8",     unidad: "+",  label: "Locales Comerciales" },
-  { valor: "2",     unidad: "",   label: "Niveles" },
-  { valor: "20",    unidad: "",   label: "Puestos de Parking" },
-];
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Color palette (static constant — defined outside component to avoid re-creation on each render) ──
 const C = {
   bg:     "#0A0A0A",
   card:   "rgba(255,255,255,0.04)",
@@ -59,21 +37,30 @@ const C = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 function BucarePlazaPage() {
+  const { content } = useSiteContent();
+  const comData = content?.comercial;
+
+  const LOCALES = comData?.locales || [];
+  const VENTAJAS = comData?.ventajas || [];
+  const STATS = comData?.stats || [];
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeAccordion, setActiveAccordion] = useState<number | null>(0);
   const [scrolled, setScrolled] = useState(false);
   const [carouselIdx, setCarouselIdx] = useState(0);
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
+  const [projectVideoReady, setProjectVideoReady] = useState(false);
+
+  const scrollTo = useCallback((id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    setMenuOpen(false);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    setMenuOpen(false);
-  };
 
   const navLinks = [
     { label: "El Proyecto", id: "proyecto" },
@@ -105,15 +92,16 @@ function BucarePlazaPage() {
             src="/comercial/logo_plaza.png" 
             alt="Bucare Plaza Logo" 
             style={{ 
-              height: "52px", 
+              height: "96px", 
               objectFit: "contain",
-              filter: "brightness(0) invert(1)" 
+              filter: "brightness(0) invert(1)",
+              transform: "translateY(16px)" 
             }} 
           />
         </div>
 
         {/* Desktop nav */}
-        <nav style={{ display: "flex", alignItems: "center", gap: "32px" }} className="hidden-mobile">
+        <nav style={{ display: "flex", alignItems: "center", gap: "32px", transform: "translateY(12px)" }} className="hidden-mobile">
           {navLinks.map(n => (
             <button key={n.id} onClick={() => scrollTo(n.id)}
               style={{ background: "none", border: "none", color: "#FFFFFF", fontSize: "0.95rem", fontWeight: 500, cursor: "pointer", transition: "color 0.2s", padding: 0 }}
@@ -166,25 +154,32 @@ function BucarePlazaPage() {
 
       {/* ══ HERO ════════════════════════════════════════════════════════════ */}
       <section style={{ position: "relative", height: "100dvh", minHeight: "600px", display: "flex", alignItems: "flex-end" }}>
-        <img src="/comercial/025.jpeg" alt="Bucare Plaza"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        {comData?.hero?.video ? (
+          <>
+            <img src={comData.hero.mainImage || "/comercial/025.jpeg"} alt="Bucare Plaza poster"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.7s ease", opacity: heroVideoReady ? 0 : 1 }} />
+            <video
+              src={comData.hero.video}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+              onCanPlayThrough={() => setHeroVideoReady(true)}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.7s ease", opacity: heroVideoReady ? 1 : 0 }}
+            />
+          </>
+        ) : (
+          <img src={comData?.hero?.mainImage || "/comercial/025.jpeg"} alt="Bucare Plaza"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        )}
         {/* Gradient overlay */}
         <div style={{
           position: "absolute", inset: 0,
           background: "linear-gradient(to top, rgba(10,10,10,1) 0%, rgba(10,10,10,0.6) 40%, rgba(10,10,10,0.15) 100%)",
         }} />
 
-        {/* Floating stat card — top right */}
-        <div style={{
-          position: "absolute", top: "100px", right: "5vw",
-          background: "rgba(10,10,10,0.72)", backdropFilter: "blur(16px)",
-          border: `1px solid rgba(225,182,104,0.3)`, borderRadius: "16px",
-          padding: "18px 24px", minWidth: "160px",
-        }}>
-          <div style={{ color: C.muted, fontSize: "0.62rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "6px" }}>Ocupación</div>
-          <div style={{ color: C.gold, fontFamily: "'Archivo', sans-serif", fontSize: "2.4rem", fontWeight: 900, lineHeight: 1, letterSpacing: "-0.04em" }}>87%</div>
-          <div style={{ color: C.muted, fontSize: "0.65rem", marginTop: "4px" }}>locales activos</div>
-        </div>
+
 
         {/* Hero content */}
         <div style={{ position: "relative", zIndex: 1, padding: "0 5vw 8vh", width: "100%", maxWidth: "900px" }}>
@@ -195,11 +190,12 @@ function BucarePlazaPage() {
             fontFamily: "'Archivo', sans-serif", fontWeight: 900,
             fontSize: "clamp(3.5rem, 10vw, 8rem)", letterSpacing: "-0.04em",
             lineHeight: 0.9, margin: "0 0 24px", color: C.text,
+            whiteSpace: "pre-line"
           }}>
-            bucare<br />plaza<span style={{ color: C.gold }}>.</span>
+            {comData?.hero?.title || "bucare\nplaza."}
           </h1>
           <p style={{ color: "rgba(240,237,232,0.65)", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", maxWidth: "480px", lineHeight: 1.5, marginBottom: "36px" }}>
-            El escenario comercial donde las mejores marcas de la ciudad encuentran su hogar.
+            {comData?.hero?.subtitle || "El escenario comercial donde las mejores marcas de la ciudad encuentran su hogar."}
           </p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <button onClick={() => scrollTo("espacios")}
@@ -253,15 +249,17 @@ function BucarePlazaPage() {
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "80px", alignItems: "center" }}>
           {/* Text */}
           <div>
-            <p style={{ color: C.gold, fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "20px" }}>01 El Proyecto</p>
-            <h2 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 4vw, 3rem)", letterSpacing: "-0.03em", lineHeight: 1.05, margin: "0 0 24px", color: C.text }}>
-              Diseñado para el<br /><span style={{ color: C.gold }}>éxito de tu marca.</span>
+            <p style={{ color: C.gold, fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "20px" }}>
+              {comData?.proyecto?.subtitle || "01 El Proyecto"}
+            </p>
+            <h2 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 4vw, 3rem)", letterSpacing: "-0.03em", lineHeight: 1.05, margin: "0 0 24px", color: C.text, whiteSpace: "pre-line" }}>
+              {comData?.proyecto?.title || "Diseñado para el\néxito de tu marca."}
             </h2>
             <p style={{ color: C.muted, fontSize: "0.95rem", lineHeight: 1.8, marginBottom: "20px" }}>
-              Bucare Plaza es la plaza comercial boutique del proyecto Bucare, concebida como un ecosistema de marcas curadas que comparten valores: calidad, diseño y experiencia de cliente.
+              {comData?.proyecto?.desc1 || "Bucare Plaza es la plaza comercial boutique del proyecto Bucare, concebida como un ecosistema de marcas curadas que comparten valores: calidad, diseño y experiencia de cliente."}
             </p>
             <p style={{ color: C.muted, fontSize: "0.95rem", lineHeight: 1.8, marginBottom: "36px" }}>
-              Ubicada en la planta baja del complejo Bucare Suite &amp; Plaza, tiene frente a dos calles principales y comparte flujo de visitas con los residentes de las 60 unidades habitacionales de la torre.
+              {comData?.proyecto?.desc2 || "Ubicada en la planta baja del complejo Bucare Suite & Plaza, tiene frente a dos calles principales y comparte flujo de visitas con los residentes de las 60 unidades habitacionales de la torre."}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {[
@@ -282,10 +280,27 @@ function BucarePlazaPage() {
           {/* Image */}
           <div style={{ position: "relative" }}>
             <div style={{ borderRadius: "20px", overflow: "hidden", aspectRatio: "4/3" }}>
-              <img src="/comercial/027.jpeg" alt="Bucare Plaza día"
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.5s ease" }}
-                onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
-                onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")} />
+              {comData?.proyecto?.video ? (
+                <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                  <img src={comData.proyecto.image || "/comercial/027.jpeg"} alt="Bucare Plaza día poster"
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.7s ease", opacity: projectVideoReady ? 0 : 1 }} />
+                  <video
+                    src={comData.proyecto.video}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="auto"
+                    onCanPlayThrough={() => setProjectVideoReady(true)}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.7s ease", opacity: projectVideoReady ? 1 : 0 }}
+                  />
+                </div>
+              ) : (
+                <img src={comData?.proyecto?.image || "/comercial/027.jpeg"} alt="Bucare Plaza día"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.5s ease" }}
+                  onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
+                  onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")} />
+              )}
             </div>
             {/* Floating label */}
             <div style={{
@@ -300,8 +315,92 @@ function BucarePlazaPage() {
           </div>
         </div>
       </section>
+      {/* ══ DISTRIBUCIÓN DE ÁREAS ═════════════════════════════════════════════ */}
+      <section style={{ padding: "80px 5vw", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          {/* Header */}
+          <div style={{ marginBottom: "48px" }}>
+            <p style={{ color: C.gold, fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "12px" }}>
+              {comData?.distribucion?.subtitulo || "02 Distribución de Áreas"}
+            </p>
+            <h2 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 4vw, 3rem)", letterSpacing: "-0.03em", lineHeight: 1.05, margin: 0, color: C.text, whiteSpace: "pre-line" }}>
+              {comData?.distribucion?.titulo || "Planificación espacial\ninteligente y optimizada."}
+            </h2>
+          </div>
 
-      {/* ══ LOCALES / MÓDULOS ═══════════════════════════════════════════════ */}
+          {/* Stats Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px", marginBottom: "56px" }}>
+            {(comData?.distribucion?.statsGrid || []).map((stat, i) => (
+              <div key={i} style={{ borderLeft: `1px solid ${C.border}`, paddingLeft: "24px" }}>
+                <div style={{ fontFamily: "'Archivo', sans-serif", fontSize: "clamp(2.2rem, 4vw, 3.2rem)", fontWeight: 900, color: C.text, lineHeight: 1 }}>
+                  {stat.value}
+                  {stat.unit && <span style={{ color: C.gold, fontSize: "1.5rem", fontWeight: 700, marginLeft: "4px" }}>{stat.unit}</span>}
+                </div>
+                <div style={{ color: C.muted, fontSize: "0.7rem", textTransform: "uppercase", marginTop: "8px", fontWeight: 600 }}>
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Levels grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "48px", alignItems: "start" }}>
+            {/* Planta Baja */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderBottom: `1px solid ${C.gold}`, paddingBottom: "12px" }}>
+                <h3 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: "1.25rem", color: C.text, margin: 0 }}>
+                  {comData?.distribucion?.plantaBaja?.label || "Planta Baja"}
+                </h3>
+                <span style={{ color: C.gold, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  {comData?.distribucion?.plantaBaja?.rangLabel || "Locales del 1 al 5"}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                {(comData?.distribucion?.plantaBaja?.items || []).map((item, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid rgba(255,255,255,0.05)`, fontSize: "0.85rem", color: C.muted }}>
+                    <span style={{ color: C.text }}>{item.name}</span>
+                    <span>{item.area}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "14px", borderTop: `1px solid ${C.border}`, fontSize: "0.88rem", fontWeight: 700 }}>
+                <span style={{ color: C.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subtotal {comData?.distribucion?.plantaBaja?.label || "Planta Baja"}</span>
+                <span style={{ color: C.gold }}>{comData?.distribucion?.plantaBaja?.subtotal || "207.28 m²"}</span>
+              </div>
+            </div>
+
+            {/* Planta Alta */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderBottom: `1px solid ${C.gold}`, paddingBottom: "12px" }}>
+                <h3 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: "1.25rem", color: C.text, margin: 0 }}>
+                  {comData?.distribucion?.plantaAlta?.label || "Planta Alta"}
+                </h3>
+                <span style={{ color: C.gold, fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  {comData?.distribucion?.plantaAlta?.rangLabel || "Locales del 6 al 10"}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                {(comData?.distribucion?.plantaAlta?.items || []).map((item, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid rgba(255,255,255,0.05)`, fontSize: "0.85rem", color: C.muted }}>
+                    <span style={{ color: C.text }}>{item.name}</span>
+                    <span>{item.area}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "14px", borderTop: `1px solid ${C.border}`, fontSize: "0.88rem", fontWeight: 700 }}>
+                <span style={{ color: C.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subtotal {comData?.distribucion?.plantaAlta?.label || "Planta Alta"}</span>
+                <span style={{ color: C.gold }}>{comData?.distribucion?.plantaAlta?.subtotal || "174.40 m²"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══ LOCALES / MÓDULOS ══════════════════════════════════════════════════════ */}
       <section id="espacios" style={{ padding: "80px 0 120px" }}>
         <div style={{ padding: "0 5vw", marginBottom: "48px", display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
           <div>
@@ -503,15 +602,15 @@ function BucarePlazaPage() {
               <p style={{ color: "rgba(240,237,232,0.65)", fontSize: "0.88rem", lineHeight: 1.6 }}>
                 Agenda una visita y conoce los espacios disponibles de primera mano.
               </p>
-              <div style={{ marginTop: "32px", display: "flex", flexDirection: "column", gap: "12px" }}>
+               <div style={{ marginTop: "32px", display: "flex", flexDirection: "column", gap: "12px" }}>
                 {[
-                  { icon: Phone, text: "+58 412-000-0000" },
-                  { icon: Mail, text: "comercial@bucareplaza.com" },
-                  { icon: MapPin, text: "San Cristóbal, Estado Táchira" },
+                  { icon: Phone, text: content?.contacto?.phone || "+58 (276) 000-0000" },
+                  { icon: Mail, text: content?.contacto?.email || "hola@bucaresuite.com" },
+                  { icon: MapPin, text: content?.contacto?.address || "San Cristóbal, Táchira" },
                 ].map(({ icon: Icon, text }) => (
-                  <div key={text} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <Icon size={15} color={C.gold} />
-                    <span style={{ color: "rgba(240,237,232,0.8)", fontSize: "0.82rem" }}>{text}</span>
+                  <div key={text} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <Icon size={15} color={C.gold} style={{ flexShrink: 0, marginTop: "2px" }} />
+                    <span style={{ color: "rgba(240,237,232,0.8)", fontSize: "0.82rem", whiteSpace: "pre-line" }}>{text}</span>
                   </div>
                 ))}
               </div>
@@ -590,7 +689,7 @@ function BucarePlazaPage() {
                   src="/comercial/logo_plaza.png" 
                   alt="Bucare Plaza Logo" 
                   style={{ 
-                    height: "44px", 
+                    height: "80px", 
                     objectFit: "contain",
                     filter: "brightness(0) invert(1)" 
                   }} 
@@ -600,8 +699,11 @@ function BucarePlazaPage() {
                 El centro comercial boutique que redefine la experiencia de compra en San Cristóbal. Parte del ecosistema Bucare Suite &amp; Plaza.
               </p>
               <div style={{ display: "flex", gap: "12px" }}>
-                {[Instagram, Facebook].map((Icon, i) => (
-                  <a key={i} href="#" style={{
+                {[
+                  { Icon: Instagram, href: comData?.socials?.instagram || "https://instagram.com" },
+                  { Icon: Facebook, href: comData?.socials?.facebook || "https://facebook.com" },
+                ].map(({ Icon, href }, i) => (
+                  <a key={i} href={href} target="_blank" rel="noopener noreferrer" style={{
                     width: "36px", height: "36px", borderRadius: "50%",
                     background: C.card, border: `1px solid ${C.border}`,
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -632,13 +734,13 @@ function BucarePlazaPage() {
             <div>
               <div style={{ color: C.muted, fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "16px" }}>Contacto</div>
               {[
-                { icon: Phone, text: "+58 412-000-0000" },
-                { icon: Mail, text: "comercial@bucareplaza.com" },
-                { icon: MapPin, text: "San Cristóbal, Táchira" },
+                { icon: Phone, text: content?.contacto?.phone || "+58 (276) 000-0000" },
+                { icon: Mail, text: content?.contacto?.email || "hola@bucaresuite.com" },
+                { icon: MapPin, text: content?.contacto?.address || "San Cristóbal, Táchira" },
               ].map(({ icon: Icon, text }) => (
-                <div key={text} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                  <Icon size={13} color={C.gold} />
-                  <span style={{ color: C.muted, fontSize: "0.8rem" }}>{text}</span>
+                <div key={text} style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "12px" }}>
+                  <Icon size={13} color={C.gold} style={{ flexShrink: 0, marginTop: "2px" }} />
+                  <span style={{ color: C.muted, fontSize: "0.8rem", whiteSpace: "pre-line" }}>{text}</span>
                 </div>
               ))}
               <Link to="/" style={{ display: "inline-block", marginTop: "8px", color: C.muted, fontSize: "0.75rem", textDecoration: "none", transition: "color 0.2s" }}
@@ -654,7 +756,23 @@ function BucarePlazaPage() {
             <div style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 900, fontSize: "clamp(2rem, 8vw, 5rem)", letterSpacing: "-0.05em", color: "rgba(255,255,255,0.04)", lineHeight: 1, userSelect: "none" }}>
               bucare plaza.
             </div>
-            <span style={{ color: C.muted, fontSize: "0.72rem" }}>© 2026 Bucare Suite & Plaza. Todos los derechos reservados.</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", textAlign: "right" }} className="mobile-footer-credits">
+              <span style={{ color: C.muted, fontSize: "0.72rem" }}>© 2026 Bucare Suite & Plaza. Todos los derechos reservados.</span>
+              <span style={{ color: "rgba(255,255,255,0.25)", fontSize: "0.62rem", marginTop: "4px" }}>
+                Desarrollado por{" "}
+                <a href="https://www.lexsank.xyz" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", transition: "color 0.2s" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = C.gold)}
+                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}>
+                  LexSank Interactive
+                </a>{" "}
+                -{" "}
+                <a href="https://www.lexsank.xyz" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none", transition: "color 0.2s", fontWeight: 500 }}
+                  onMouseEnter={e => (e.currentTarget.style.color = C.gold)}
+                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}>
+                  www.lexsank.xyz
+                </a>
+              </span>
+            </div>
           </div>
         </div>
       </footer>

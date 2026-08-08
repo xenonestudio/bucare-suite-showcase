@@ -78,12 +78,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bucare Suite — Residencias de lujo en Nueva Guayana" },
-      { name: "description", content: "Bucare Suite: residencias contemporáneas de alta gama en San Cristóbal, Nueva Guayana. Arquitectura inteligente, elegancia atemporal." },
+      { title: "Bucare Suite — Apartamentos de lujo en Nueva Guayana" },
+      { name: "description", content: "Bucare Suite: apartamentos contemporáneos de alta gama en San Cristóbal, Nueva Guayana. Arquitectura inteligente, elegancia atemporal." },
       { name: "author", content: "Bucare Suite" },
       { name: "robots", content: "index, follow" },
-      { property: "og:title", content: "Bucare Suite — Residencias de lujo en Nueva Guayana" },
-      { property: "og:description", content: "Residencias contemporáneas de alta gama en San Cristóbal, Nueva Guayana." },
+      { property: "og:title", content: "Bucare Suite — Apartamentos de lujo en Nueva Guayana" },
+      { property: "og:description", content: "Apartamentos contemporáneos de alta gama en San Cristóbal, Nueva Guayana." },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "/logo.webp" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -120,6 +120,8 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 import { FloatingChatWidget } from "../components/FloatingChatWidget";
+import { SiteContentProvider } from "../contexts/SiteContentContext";
+
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -128,9 +130,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      {!isDashboard && <FloatingChatWidget />}
+      <SiteContentProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        {!isDashboard && <FloatingChatWidget />}
+      </SiteContentProvider>
     </QueryClientProvider>
   );
 }

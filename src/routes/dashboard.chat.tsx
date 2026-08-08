@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import {
   MessageSquare, Bot, User, Send, ShieldAlert, Pause, Play,
-  Settings, RefreshCw, Building2, ShoppingBag, Clock, CheckCircle2, Cpu
+  Settings, RefreshCw, Building2, ShoppingBag, Clock, CheckCircle2, Cpu, ArrowLeft,
+  Smartphone, QrCode, AlertCircle, Radio
 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/chat")({
@@ -44,6 +45,13 @@ interface GeminiModelInfo {
   description?: string;
 }
 
+interface WhatsAppStatus {
+  connected: boolean;
+  initializing: boolean;
+  phone?: string;
+  qrCode?: string | null;
+}
+
 function AdminChatDashboard() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -51,14 +59,33 @@ function AdminChatDashboard() {
   const [adminInput, setAdminInput] = useState("");
   const [loadingReply, setLoadingReply] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showWaModal, setShowWaModal] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [availableModels, setAvailableModels] = useState<GeminiModelInfo[]>([]);
+
+  // WhatsApp bot status state
+  const [waStatus, setWaStatus] = useState<WhatsAppStatus>({
+    connected: false,
+    initializing: false,
+  });
+  const [waLoading, setWaLoading] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testMsg, setTestMsg] = useState("");
+  const [waFeedback, setWaFeedback] = useState({ text: "", type: "" });
 
   const [aiConfigs, setAiConfigs] = useState<{ [key: string]: { prompt: string; model: string } }>({
     BUCARE_SUITE: { prompt: "", model: "gemini-2.0-flash" },
     BUCARE_PLAZA: { prompt: "", model: "gemini-2.0-flash" },
   });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 1024 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const fetchSessions = async () => {
     const token = localStorage.getItem("token");
@@ -71,7 +98,7 @@ function AdminChatDashboard() {
       if (res.ok) {
         const json = await res.json();
         setSessions(json.data || []);
-        if (!selectedSessionId && json.data.length > 0) {
+        if (!selectedSessionId && json.data.length > 0 && !isMobile) {
           setSelectedSessionId(json.data[0].id);
         }
       }
@@ -124,6 +151,23 @@ function AdminChatDashboard() {
     }
   };
 
+  const fetchWaStatus = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch("/api/v1/whatsapp/status", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setWaStatus(json.data || {});
+      }
+    } catch (err) {
+      console.error("Error fetching WhatsApp status:", err);
+    }
+  };
+
   const fetchAvailableModels = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -147,8 +191,11 @@ function AdminChatDashboard() {
   useEffect(() => {
     fetchSessions();
     fetchAiConfigs();
+    fetchWaStatus();
+
     const interval = setInterval(() => {
       fetchSessions();
+      fetchWaStatus();
       if (selectedSessionId) fetchSessionDetails(selectedSessionId);
     }, 4000);
     return () => clearInterval(interval);
@@ -167,6 +214,74 @@ function AdminChatDashboard() {
   const handleOpenConfigModal = () => {
     setShowConfigModal(true);
     fetchAvailableModels();
+  };
+
+  const handleOpenWaModal = () => {
+    setShowWaModal(true);
+    fetchWaStatus();
+  };
+
+  const handleInitWa = async () => {
+    setWaLoading(true);
+    const token = localStorage.getItem("token");
+    try {
+      await fetch("/api/v1/whatsapp/init", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTimeout(fetchWaStatus, 2000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setWaLoading(false);
+    }
+  };
+
+  const handleRestartWa = async () => {
+    setWaLoading(true);
+    const token = localStorage.getItem("token");
+    try {
+      await fetch("/api/v1/whatsapp/restart", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTimeout(fetchWaStatus, 2000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setWaLoading(false);
+    }
+  };
+
+  const handleSendTestWa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testPhone.trim() || !testMsg.trim()) return;
+
+    setWaLoading(true);
+    setWaFeedback({ text: "", type: "" });
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch("/api/v1/whatsapp/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ phone: testPhone.trim(), message: testMsg.trim() }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setWaFeedback({ text: "¡Mensaje enviado exitosamente vía WhatsApp!", type: "success" });
+        setTestMsg("");
+      } else {
+        setWaFeedback({ text: json.message || "No se pudo enviar el mensaje.", type: "error" });
+      }
+    } catch (e) {
+      setWaFeedback({ text: "Error de red al enviar mensaje.", type: "error" });
+    } finally {
+      setWaLoading(false);
+    }
   };
 
   const handleToggleAi = async () => {
@@ -253,10 +368,22 @@ function AdminChatDashboard() {
     }
   };
 
+  const showSessionsList = !isMobile || !selectedSessionId;
+  const showChatPanel = !isMobile || selectedSessionId;
+
   return (
     <div style={{ background: "#0A0A0A", minHeight: "calc(100vh - 80px)", color: "#F0EDE8", padding: "24px" }}>
       {/* Top Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: isMobile ? "flex-start" : "center",
+          justifyContent: "space-between",
+          flexDirection: isMobile ? "column" : "row",
+          gap: isMobile ? "16px" : "0",
+          marginBottom: "24px",
+        }}
+      >
         <div>
           <div style={{ color: "#E1B668", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>
             Administración de Asistencia IA &amp; Chats
@@ -266,280 +393,505 @@ function AdminChatDashboard() {
           </h1>
         </div>
 
-        <button
-          onClick={handleOpenConfigModal}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "10px 20px",
-            borderRadius: "12px",
-            background: "rgba(225, 182, 104, 0.12)",
-            color: "#E1B668",
-            border: "1px solid rgba(225, 182, 104, 0.3)",
-            fontWeight: 600,
-            fontSize: "0.85rem",
-            cursor: "pointer",
-          }}
-        >
-          <Settings size={18} /> Configurar Prompts y Modelos IA
-        </button>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
+          {/* Botón WhatsApp */}
+          <button
+            onClick={handleOpenWaModal}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 18px",
+              borderRadius: "12px",
+              background: waStatus.connected ? "rgba(74, 222, 128, 0.12)" : "rgba(225, 182, 104, 0.12)",
+              color: waStatus.connected ? "#4ADE80" : "#E1B668",
+              border: waStatus.connected ? "1px solid rgba(74, 222, 128, 0.3)" : "1px solid rgba(225, 182, 104, 0.3)",
+              fontWeight: 600,
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              flex: isMobile ? 1 : "auto",
+              justifyContent: "center",
+            }}
+          >
+            <Smartphone size={18} />
+            <span>{waStatus.connected ? "● WhatsApp Conectado" : "📱 Conectar WhatsApp (QR)"}</span>
+          </button>
+
+          {/* Botón Config Prompts */}
+          <button
+            onClick={handleOpenConfigModal}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 18px",
+              borderRadius: "12px",
+              background: "rgba(255, 255, 255, 0.05)",
+              color: "#F0EDE8",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              fontWeight: 600,
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              flex: isMobile ? 1 : "auto",
+              justifyContent: "center",
+            }}
+          >
+            <Settings size={18} /> Prompts IA
+          </button>
+        </div>
       </div>
 
       {/* Main Grid: Session list + Chat details */}
-      <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: "20px", height: "720px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(280px, 340px) 1fr",
+          gap: "20px",
+          height: "calc(100svh - 180px)",
+          minHeight: "500px",
+        }}
+      >
         {/* Left Panel: Sessions List */}
-        <div
-          style={{
-            background: "#121212",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "16px",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div style={{ padding: "16px", background: "#161616", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#F0EDE8" }}>Conversaciones ({sessions.length})</span>
-            <button onClick={fetchSessions} style={{ background: "none", border: "none", color: "#8A8A8A", cursor: "pointer" }}>
-              <RefreshCw size={16} />
-            </button>
-          </div>
+        {showSessionsList && (
+          <div
+            style={{
+              background: "#121212",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "16px",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div
+              style={{
+                padding: "16px",
+                background: "#161616",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#F0EDE8" }}>Conversaciones ({sessions.length})</span>
+              <button onClick={fetchSessions} style={{ background: "none", border: "none", color: "#8A8A8A", cursor: "pointer" }}>
+                <RefreshCw size={16} />
+              </button>
+            </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
-            {sessions.length === 0 ? (
-              <div style={{ padding: "32px", textAlign: "center", color: "#6A6A6A", fontSize: "0.85rem" }}>
-                No hay conversaciones activas aún.
-              </div>
-            ) : (
-              sessions.map((s) => {
-                const isSelected = s.id === selectedSessionId;
-                const lastMsg = s.messages[0]?.content || "Sin mensajes";
-                const displayName = s.user?.fullName || s.guestName || (s.user?.email ? s.user.email : "Visitante Invitado");
-                const isGuest = !s.user;
-
-                return (
-                  <div
-                    key={s.id}
-                    onClick={() => setSelectedSessionId(s.id)}
-                    style={{
-                      padding: "14px",
-                      borderRadius: "12px",
-                      background: isSelected ? "rgba(225, 182, 104, 0.12)" : "rgba(255, 255, 255, 0.02)",
-                      border: isSelected ? "1px solid rgba(225, 182, 104, 0.3)" : "1px solid rgba(255, 255, 255, 0.04)",
-                      marginBottom: "8px",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-                      <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "#F0EDE8", display: "flex", alignItems: "center", gap: "6px" }}>
-                        {displayName}
-                        {isGuest && (
-                          <span style={{ fontSize: "0.6rem", background: "rgba(225, 182, 104, 0.15)", color: "#E1B668", padding: "1px 6px", borderRadius: "4px" }}>
-                            Invitado
-                          </span>
-                        )}
-                      </span>
-                      <span
-                        style={{
-                          padding: "2px 8px",
-                          borderRadius: "99px",
-                          fontSize: "0.62rem",
-                          fontWeight: 700,
-                          background: s.project === "BUCARE_PLAZA" ? "rgba(33, 59, 38, 0.8)" : "rgba(225, 182, 104, 0.2)",
-                          color: s.project === "BUCARE_PLAZA" ? "#4ADE80" : "#E1B668",
-                        }}
-                      >
-                        {s.project === "BUCARE_PLAZA" ? "PLAZA" : "SUITE"}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: "0.78rem", color: "#8A8A8A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "8px" }}>
-                      {lastMsg}
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.68rem" }}>
-                      <span style={{ color: s.isAiActive ? "#4ADE80" : "#E1B668", fontWeight: 600 }}>
-                        {s.isAiActive ? "● IA Activa" : "● Intervención Humana"}
-                      </span>
-                      <span style={{ color: "#6A6A6A" }}>
-                        {new Date(s.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Right Panel: Selected Chat Details */}
-        <div
-          style={{
-            background: "#121212",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "16px",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          {selectedSession ? (
-            <>
-              {/* Header with AI Intervention Toggle */}
-              <div
-                style={{
-                  padding: "16px 24px",
-                  background: "#161616",
-                  borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#F0EDE8" }}>
-                      {selectedSession.user?.fullName || selectedSession.guestName || "Visitante Invitado"}
-                    </span>
-                    {selectedSession.user?.email ? (
-                      <span style={{ color: "#8A8A8A", fontSize: "0.8rem" }}>({selectedSession.user.email})</span>
-                    ) : (
-                      <span style={{ fontSize: "0.68rem", color: "#E1B668", background: "rgba(225, 182, 104, 0.15)", padding: "2px 8px", borderRadius: "99px", fontWeight: 600 }}>
-                        Visitante no registrado
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: "0.72rem", color: "#6A6A6A", marginTop: "2px" }}>
-                    Origen: <strong style={{ color: "#E1B668" }}>{selectedSession.project === "BUCARE_PLAZA" ? "Bucare Plaza Comercial" : "Bucare Suite Residencias"}</strong>
-                  </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
+              {sessions.length === 0 ? (
+                <div style={{ padding: "32px", textAlign: "center", color: "#6A6A6A", fontSize: "0.85rem" }}>
+                  No hay conversaciones activas aún.
                 </div>
-
-                {/* Switch para Activar / Pausar IA */}
-                <button
-                  onClick={handleToggleAi}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "8px 16px",
-                    borderRadius: "10px",
-                    background: selectedSession.isAiActive ? "rgba(74, 222, 128, 0.15)" : "rgba(225, 182, 104, 0.15)",
-                    color: selectedSession.isAiActive ? "#4ADE80" : "#E1B668",
-                    border: selectedSession.isAiActive ? "1px solid rgba(74, 222, 128, 0.3)" : "1px solid rgba(225, 182, 104, 0.3)",
-                    fontWeight: 700,
-                    fontSize: "0.8rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  {selectedSession.isAiActive ? (
-                    <>
-                      <Bot size={16} /> IA Activa (Pausar para Intervenir)
-                    </>
-                  ) : (
-                    <>
-                      <Pause size={16} /> IA Pausada (Modo Intervención Humana)
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Messages feed */}
-              <div style={{ flex: 1, padding: "20px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px" }}>
-                {selectedSession.messages.map((m) => {
-                  const isUser = m.sender === "USER";
-                  const isAdmin = m.sender === "ADMIN";
+              ) : (
+                sessions.map((s) => {
+                  const isSelected = s.id === selectedSessionId;
+                  const lastMsg = s.messages[0]?.content || "Sin mensajes";
+                  const displayName = s.user?.fullName || s.guestName || (s.user?.email ? s.user.email : "Visitante Invitado");
+                  const isGuest = !s.user;
+                  const isWa = s.guestToken?.startsWith("wa_");
 
                   return (
-                    <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-start" : "flex-end" }}>
-                      <span style={{ fontSize: "0.65rem", color: "#6A6A6A", marginBottom: "4px", padding: "0 4px" }}>
-                        {isUser ? `Cliente (${selectedSession.user?.fullName || "Usuario"})` : isAdmin ? "Tú (Administrador)" : "IA Gemini"} ·{" "}
-                        {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                      <div
-                        style={{
-                          maxWidth: "75%",
-                          padding: "12px 16px",
-                          borderRadius: isUser ? "16px 16px 16px 2px" : "16px 16px 2px 16px",
-                          background: isUser
-                            ? "rgba(255, 255, 255, 0.06)"
-                            : isAdmin
-                            ? "linear-gradient(135deg, #213B26 0%, #16291A 100%)"
-                            : "linear-gradient(135deg, #2A2518 0%, #1A160E 100%)",
-                          color: "#F0EDE8",
-                          fontSize: "0.88rem",
-                          lineHeight: 1.6,
-                          border: isUser
-                            ? "1px solid rgba(255, 255, 255, 0.08)"
-                            : isAdmin
-                            ? "1px solid rgba(74, 222, 128, 0.3)"
-                            : "1px solid rgba(225, 182, 104, 0.3)",
-                        }}
-                      >
-                        {m.content}
+                    <div
+                      key={s.id}
+                      onClick={() => setSelectedSessionId(s.id)}
+                      style={{
+                        padding: "14px",
+                        borderRadius: "12px",
+                        background: isSelected ? "rgba(225, 182, 104, 0.12)" : "rgba(255, 255, 255, 0.02)",
+                        border: isSelected ? "1px solid rgba(225, 182, 104, 0.3)" : "1px solid rgba(255, 255, 255, 0.04)",
+                        marginBottom: "8px",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                        <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "#F0EDE8", display: "flex", alignItems: "center", gap: "6px" }}>
+                          {displayName}
+                          {isWa && (
+                            <span style={{ fontSize: "0.6rem", background: "rgba(74, 222, 128, 0.15)", color: "#4ADE80", padding: "1px 6px", borderRadius: "4px" }}>
+                              WhatsApp
+                            </span>
+                          )}
+                          {isGuest && !isWa && (
+                            <span style={{ fontSize: "0.6rem", background: "rgba(225, 182, 104, 0.15)", color: "#E1B668", padding: "1px 6px", borderRadius: "4px" }}>
+                              Invitado
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: "99px",
+                            fontSize: "0.62rem",
+                            fontWeight: 700,
+                            background: s.project === "BUCARE_PLAZA" ? "rgba(33, 59, 38, 0.8)" : "rgba(225, 182, 104, 0.2)",
+                            color: s.project === "BUCARE_PLAZA" ? "#4ADE80" : "#E1B668",
+                          }}
+                        >
+                          {s.project === "BUCARE_PLAZA" ? "PLAZA" : "SUITE"}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: "0.78rem", color: "#8A8A8A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "8px" }}>
+                        {lastMsg}
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.68rem" }}>
+                        <span style={{ color: s.isAiActive ? "#4ADE80" : "#E1B668", fontWeight: 600 }}>
+                          {s.isAiActive ? "● IA Activa" : "● Intervención Humana"}
+                        </span>
+                        <span style={{ color: "#6A6A6A" }}>
+                          {new Date(s.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
                       </div>
                     </div>
                   );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
+                })
+              )}
+            </div>
+          </div>
+        )}
 
-              {/* Admin reply input */}
-              <form
-                onSubmit={handleSendAdminReply}
-                style={{
-                  padding: "16px",
-                  background: "#161616",
-                  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-                  display: "flex",
-                  gap: "12px",
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="Enviar respuesta directa como Administrador..."
-                  value={adminInput}
-                  onChange={(e) => setAdminInput(e.target.value)}
+        {/* Right Panel: Selected Chat Details */}
+        {showChatPanel && (
+          <div
+            style={{
+              background: "#121212",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "16px",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {selectedSession ? (
+              <>
+                {/* Header with AI Intervention Toggle */}
+                <div
                   style={{
-                    flex: 1,
-                    background: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    borderRadius: "12px",
-                    padding: "12px 16px",
-                    color: "#F0EDE8",
-                    fontSize: "0.88rem",
-                    outline: "none",
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={loadingReply || !adminInput.trim()}
-                  style={{
-                    padding: "0 24px",
-                    borderRadius: "12px",
-                    background: "#E1B668",
-                    color: "#0A0A0A",
-                    fontWeight: 700,
-                    fontSize: "0.88rem",
-                    border: "none",
-                    cursor: adminInput.trim() ? "pointer" : "default",
+                    padding: "16px 24px",
+                    background: "#161616",
+                    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
                     display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
+                    alignItems: isMobile ? "flex-start" : "center",
+                    justifyContent: "space-between",
+                    flexDirection: isMobile ? "column" : "row",
+                    gap: isMobile ? "12px" : "0",
                   }}
                 >
-                  <Send size={16} /> Responder
+                  <div>
+                    {isMobile && (
+                      <button
+                        onClick={() => setSelectedSessionId(null)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#E1B668",
+                          fontSize: "0.8rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          marginBottom: "8px",
+                          padding: 0,
+                        }}
+                      >
+                        <ArrowLeft size={16} /> Conversaciones
+                      </button>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#F0EDE8" }}>
+                        {selectedSession.user?.fullName || selectedSession.guestName || "Visitante Invitado"}
+                      </span>
+                      {selectedSession.user?.email ? (
+                        <span style={{ color: "#8A8A8A", fontSize: "0.8rem" }}>({selectedSession.user.email})</span>
+                      ) : (
+                        <span style={{ fontSize: "0.68rem", color: "#E1B668", background: "rgba(225, 182, 104, 0.15)", padding: "2px 8px", borderRadius: "99px", fontWeight: 600 }}>
+                          Visitante no registrado
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: "#6A6A6A", marginTop: "2px" }}>
+                      Origen: <strong style={{ color: "#E1B668" }}>{selectedSession.project === "BUCARE_PLAZA" ? "Bucare Plaza Comercial" : "Bucare Suite Apartamentos"}</strong>
+                    </div>
+                  </div>
+
+                  {/* Switch para Activar / Pausar IA */}
+                  <button
+                    onClick={handleToggleAi}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      background: selectedSession.isAiActive ? "rgba(74, 222, 128, 0.15)" : "rgba(225, 182, 104, 0.15)",
+                      color: selectedSession.isAiActive ? "#4ADE80" : "#E1B668",
+                      border: selectedSession.isAiActive ? "1px solid rgba(74, 222, 128, 0.3)" : "1px solid rgba(225, 182, 104, 0.3)",
+                      fontWeight: 700,
+                      fontSize: "0.8rem",
+                      cursor: "pointer",
+                      width: isMobile ? "100%" : "auto",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {selectedSession.isAiActive ? (
+                      <>
+                        <Bot size={16} /> IA Activa (Pausar para Intervenir)
+                      </>
+                    ) : (
+                      <>
+                        <Pause size={16} /> IA Pausada (Modo Intervención Humana)
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Messages feed */}
+                <div style={{ flex: 1, padding: "20px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {selectedSession.messages.map((m) => {
+                    const isUser = m.sender === "USER";
+                    const isAdmin = m.sender === "ADMIN";
+
+                    return (
+                      <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-start" : "flex-end" }}>
+                        <span style={{ fontSize: "0.65rem", color: "#6A6A6A", marginBottom: "4px", padding: "0 4px" }}>
+                          {isUser ? `Cliente (${selectedSession.user?.fullName || "Usuario"})` : isAdmin ? "Tú (Administrador)" : "IA Gemini"} ·{" "}
+                          {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                        <div
+                          style={{
+                            maxWidth: "85%",
+                            padding: "12px 16px",
+                            borderRadius: isUser ? "16px 16px 16px 2px" : "16px 16px 2px 16px",
+                            background: isUser
+                              ? "rgba(255, 255, 255, 0.06)"
+                              : isAdmin
+                              ? "linear-gradient(135deg, #213B26 0%, #16291A 100%)"
+                              : "linear-gradient(135deg, #2A2518 0%, #1A160E 100%)",
+                            color: "#F0EDE8",
+                            fontSize: "0.88rem",
+                            lineHeight: 1.6,
+                            border: isUser
+                              ? "1px solid rgba(255, 255, 255, 0.08)"
+                              : isAdmin
+                              ? "1px solid rgba(74, 222, 128, 0.3)"
+                              : "1px solid rgba(225, 182, 104, 0.3)",
+                          }}
+                        >
+                          {m.content}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Admin reply input */}
+                <form
+                  onSubmit={handleSendAdminReply}
+                  style={{
+                    padding: "16px",
+                    background: "#161616",
+                    borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                    display: "flex",
+                    gap: "12px",
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Enviar respuesta directa como Administrador..."
+                    value={adminInput}
+                    onChange={(e) => setAdminInput(e.target.value)}
+                    style={{
+                      flex: 1,
+                      background: "rgba(255, 255, 255, 0.05)",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      borderRadius: "12px",
+                      padding: "12px 16px",
+                      color: "#F0EDE8",
+                      fontSize: "0.88rem",
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={loadingReply || !adminInput.trim()}
+                    style={{
+                      padding: "0 24px",
+                      borderRadius: "12px",
+                      background: "#E1B668",
+                      color: "#0A0A0A",
+                      fontWeight: 700,
+                      fontSize: "0.88rem",
+                      border: "none",
+                      cursor: adminInput.trim() ? "pointer" : "default",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <Send size={16} /> Responder
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#6A6A6A" }}>
+                Selecciona una conversación para gestionar
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal para WhatsApp Automation & QR Code */}
+      {showWaModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(10, 10, 10, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "680px",
+              background: "#121212",
+              border: "1px solid rgba(74, 222, 128, 0.3)",
+              borderRadius: "20px",
+              padding: "clamp(16px, 4vw, 28px)",
+              position: "relative",
+              boxShadow: "0 24px 48px rgba(0, 0, 0, 0.6)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+              <div>
+                <h3 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: "1.3rem", color: "#F0EDE8", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Smartphone className="text-emerald-400" /> Control Bot de WhatsApp (WA-Automate)
+                </h3>
+                <div style={{ color: "#8A8A8A", fontSize: "0.78rem", marginTop: "4px" }}>
+                  Conecta el bot de IA a WhatsApp mediante código QR para auto-responder a clientes y notificar citas.
+                </div>
+              </div>
+
+              <button onClick={() => setShowWaModal(false)} style={{ background: "none", border: "none", color: "#8A8A8A", cursor: "pointer", fontSize: "1.2rem" }}>
+                ✕
+              </button>
+            </div>
+
+            {/* Status Card */}
+            <div style={{ background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "14px", padding: "18px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+                <div>
+                  <span style={{ fontSize: "0.7rem", color: "#8A8A8A", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.1em" }}>ESTADO DE CONEXIÓN</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                    <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: waStatus.connected ? "#4ADE80" : "#E1B668" }} />
+                    <span style={{ fontSize: "1.1rem", fontWeight: 800, color: waStatus.connected ? "#4ADE80" : "#E1B668" }}>
+                      {waStatus.connected ? "Conectado y Operativo" : waStatus.qrCode ? "Pendiente por Vincular (Código QR listo)" : "Desconectado"}
+                    </span>
+                  </div>
+                  {waStatus.phone && (
+                    <div style={{ fontSize: "0.8rem", color: "#8A8A8A", marginTop: "4px" }}>
+                      Línea conectada: <strong style={{ color: "#F0EDE8" }}>+{waStatus.phone}</strong>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {!waStatus.connected && (
+                    <button
+                      onClick={handleInitWa}
+                      disabled={waLoading}
+                      style={{ padding: "8px 14px", borderRadius: "8px", background: "#4ADE80", color: "#0A0A0A", fontWeight: 700, fontSize: "0.78rem", border: "none", cursor: "pointer" }}
+                    >
+                      {waLoading ? "Iniciando..." : "Inicializar WA-Automate"}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleRestartWa}
+                    disabled={waLoading}
+                    style={{ padding: "8px 14px", borderRadius: "8px", background: "rgba(255,255,255,0.08)", color: "#F0EDE8", border: "1px solid rgba(255,255,255,0.15)", fontSize: "0.78rem", cursor: "pointer" }}
+                  >
+                    Reiniciar Conexión
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* QR Code Scanner Display */}
+            {waStatus.qrCode && !waStatus.connected && (
+              <div style={{ background: "rgba(225, 182, 104, 0.08)", border: "1px solid rgba(225, 182, 104, 0.3)", borderRadius: "16px", padding: "20px", textAlign: "center", marginBottom: "20px" }}>
+                <h4 style={{ color: "#E1B668", fontWeight: 800, margin: "0 0 8px", fontSize: "1rem" }}>
+                  Escanea el Código QR con tu WhatsApp
+                </h4>
+                <p style={{ color: "#8A8A8A", fontSize: "0.78rem", margin: "0 0 16px" }}>
+                  Abre WhatsApp en tu teléfono inteligente → Ajustes / Configuración → <strong>Dispositivos vinculados</strong> → Vincular un dispositivo.
+                </p>
+                <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "16px", display: "inline-block", boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
+                  <img src={waStatus.qrCode} alt="WhatsApp QR Code" style={{ width: "220px", height: "220px", display: "block" }} />
+                </div>
+              </div>
+            )}
+
+            {/* Manual Test Message Form */}
+            <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "14px", padding: "18px" }}>
+              <h4 style={{ color: "#F0EDE8", fontWeight: 700, margin: "0 0 12px", fontSize: "0.9rem" }}>
+                Prueba de Envío Directo por WhatsApp
+              </h4>
+
+              <form onSubmit={handleSendTestWa} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "0.7rem", color: "#8A8A8A", textTransform: "uppercase", fontWeight: 600 }}>Número Telefónico del Cliente (ej. 584241234567)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 584241234567"
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                    style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#F0EDE8", fontSize: "0.85rem", marginTop: "4px", outline: "none" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.7rem", color: "#8A8A8A", textTransform: "uppercase", fontWeight: 600 }}>Mensaje a Enviar</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Escribe un mensaje de prueba..."
+                    value={testMsg}
+                    onChange={(e) => setTestMsg(e.target.value)}
+                    style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: "8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#F0EDE8", fontSize: "0.85rem", marginTop: "4px", outline: "none" }}
+                  />
+                </div>
+
+                {waFeedback.text && (
+                  <div style={{ fontSize: "0.78rem", color: waFeedback.type === "success" ? "#4ADE80" : "#F87171" }}>
+                    {waFeedback.text}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={waLoading || !testPhone.trim() || !testMsg.trim()}
+                  style={{ padding: "10px", borderRadius: "8px", background: "#E1B668", color: "#0A0A0A", fontWeight: 700, fontSize: "0.82rem", border: "none", cursor: "pointer" }}
+                >
+                  {waLoading ? "Enviando..." : "Enviar Mensaje WhatsApp"}
                 </button>
               </form>
-            </>
-          ) : (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#6A6A6A" }}>
-              Selecciona una conversación para gestionar
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Modal para Configuración de System Prompts y Modelo de IA */}
       {showConfigModal && (
@@ -563,7 +915,7 @@ function AdminChatDashboard() {
               background: "#121212",
               border: "1px solid rgba(225, 182, 104, 0.3)",
               borderRadius: "20px",
-              padding: "28px",
+              padding: "clamp(16px, 4vw, 28px)",
               position: "relative",
               boxShadow: "0 24px 48px rgba(0, 0, 0, 0.6)",
               maxHeight: "90vh",
@@ -588,11 +940,11 @@ function AdminChatDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               {/* Bucare Suite Config */}
               <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(225, 182, 104, 0.2)", borderRadius: "14px", padding: "18px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", justifyContent: "space-between", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "12px" : "0", marginBottom: "12px" }}>
                   <label style={{ color: "#E1B668", fontWeight: 700, fontSize: "0.9rem" }}>
-                    Bucare Suite (Residencias)
+                    Bucare Suite (Apartamentos)
                   </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", width: isMobile ? "100%" : "auto" }}>
                     <Cpu size={16} color="#E1B668" />
                     <select
                       value={aiConfigs["BUCARE_SUITE"]?.model || "gemini-2.0-flash"}
@@ -610,6 +962,7 @@ function AdminChatDashboard() {
                         color: "#F0EDE8",
                         fontSize: "0.8rem",
                         outline: "none",
+                        flex: isMobile ? 1 : "auto",
                       }}
                     >
                       {availableModels.length === 0 ? (
@@ -660,6 +1013,7 @@ function AdminChatDashboard() {
                     fontSize: "0.8rem",
                     border: "none",
                     cursor: "pointer",
+                    width: isMobile ? "100%" : "auto",
                   }}
                 >
                   Guardar Configuración Suite
@@ -668,11 +1022,11 @@ function AdminChatDashboard() {
 
               {/* Bucare Plaza Config */}
               <div style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(74, 222, 128, 0.2)", borderRadius: "14px", padding: "18px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", justifyContent: "space-between", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "12px" : "0", marginBottom: "12px" }}>
                   <label style={{ color: "#4ADE80", fontWeight: 700, fontSize: "0.9rem" }}>
                     Bucare Plaza (Comercial)
                   </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", width: isMobile ? "100%" : "auto" }}>
                     <Cpu size={16} color="#4ADE80" />
                     <select
                       value={aiConfigs["BUCARE_PLAZA"]?.model || "gemini-2.0-flash"}
@@ -690,6 +1044,7 @@ function AdminChatDashboard() {
                         color: "#F0EDE8",
                         fontSize: "0.8rem",
                         outline: "none",
+                        flex: isMobile ? 1 : "auto",
                       }}
                     >
                       {availableModels.length === 0 ? (
@@ -740,6 +1095,7 @@ function AdminChatDashboard() {
                     fontSize: "0.8rem",
                     border: "none",
                     cursor: "pointer",
+                    width: isMobile ? "100%" : "auto",
                   }}
                 >
                   Guardar Configuración Plaza

@@ -22,6 +22,12 @@ import {
   Mail,
   Save,
   Globe,
+  Trash2,
+  Images,
+  ArrowLeft,
+  ArrowRight,
+  LayoutDashboard,
+  Share2,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -41,6 +47,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { ImageUploader } from "@/components/ui/ImageUploader";
+import { VideoUploader } from "@/components/ui/VideoUploader";
 
 export const Route = createFileRoute("/dashboard/configuracion")({
 
@@ -673,9 +680,11 @@ export function DashboardConfiguracion() {
             >
               <TabsTrigger value="p_hero" className="text-xs">1. Inicio / Hero</TabsTrigger>
               <TabsTrigger value="p_proximo" className="text-xs">2. ¿Próximo Hogar?</TabsTrigger>
-              <TabsTrigger value="p_residencias" className="text-xs">3. Residencias (6 Modelos)</TabsTrigger>
+              <TabsTrigger value="p_apartamentos" className="text-xs">3. Apartamentos (6 Modelos)</TabsTrigger>
               <TabsTrigger value="p_areas" className="text-xs">4. Áreas Comunes</TabsTrigger>
               <TabsTrigger value="p_contacto" className="text-xs">5. Contacto & Footer</TabsTrigger>
+              <TabsTrigger value="p_comercial" className="text-xs">6. Comercial (Plaza)</TabsTrigger>
+              <TabsTrigger value="p_faq" className="text-xs">7. Preguntas Frecuentes (FAQ Home)</TabsTrigger>
             </TabsList>
 
 
@@ -719,11 +728,16 @@ export function DashboardConfiguracion() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <div>
+                    <div className="space-y-4">
                       <ImageUploader
-                        label="Imagen Principal de Fondo (Hero)"
+                        label="Imagen Principal de Fondo (Hero - Fallback)"
                         value={siteForm.hero.mainImage}
                         onChange={(url) => setSiteForm({ ...siteForm, hero: { ...siteForm.hero, mainImage: url } })}
+                      />
+                      <VideoUploader
+                        label="Video de Fondo (Hero - Reproducción Automática y Bucle)"
+                        value={siteForm.hero.mainVideo || ""}
+                        onChange={(url) => setSiteForm({ ...siteForm, hero: { ...siteForm.hero, mainVideo: url } })}
                       />
                     </div>
 
@@ -795,7 +809,7 @@ export function DashboardConfiguracion() {
                     <Building2 size={18} style={{ color: "var(--dash-accent)" }} /> Sección "¿Y si tu próximo hogar ya te estuviera esperando?"
                   </CardTitle>
                   <CardDescription style={{ color: "var(--dash-muted)" }}>
-                    Gestione el título, subtítulo y las 3 imágenes / tarjetas de residencias destacadas.
+                    Gestione el título, subtítulo y las 3 imágenes / tarjetas de apartamentos destacados.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -841,8 +855,9 @@ export function DashboardConfiguracion() {
                             <Input
                               value={prop.name}
                               onChange={(e) => {
-                                const newProps = [...siteForm.proximo_hogar.properties];
-                                newProps[idx].name = e.target.value;
+                                const newProps = siteForm.proximo_hogar.properties.map((p, i) => 
+                                  i === idx ? { ...p, name: e.target.value } : p
+                                );
                                 setSiteForm({ ...siteForm, proximo_hogar: { ...siteForm.proximo_hogar, properties: newProps } });
                               }}
                               className="mt-0.5 text-xs"
@@ -855,8 +870,9 @@ export function DashboardConfiguracion() {
                               <Input
                                 value={prop.price}
                                 onChange={(e) => {
-                                  const newProps = [...siteForm.proximo_hogar.properties];
-                                  newProps[idx].price = e.target.value;
+                                  const newProps = siteForm.proximo_hogar.properties.map((p, i) => 
+                                    i === idx ? { ...p, price: e.target.value } : p
+                                  );
                                   setSiteForm({ ...siteForm, proximo_hogar: { ...siteForm.proximo_hogar, properties: newProps } });
                                 }}
                                 className="mt-0.5 text-xs"
@@ -868,8 +884,9 @@ export function DashboardConfiguracion() {
                               <Input
                                 value={prop.area}
                                 onChange={(e) => {
-                                  const newProps = [...siteForm.proximo_hogar.properties];
-                                  newProps[idx].area = e.target.value;
+                                  const newProps = siteForm.proximo_hogar.properties.map((p, i) => 
+                                    i === idx ? { ...p, area: e.target.value } : p
+                                  );
                                   setSiteForm({ ...siteForm, proximo_hogar: { ...siteForm.proximo_hogar, properties: newProps } });
                                 }}
                                 className="mt-0.5 text-xs"
@@ -879,14 +896,15 @@ export function DashboardConfiguracion() {
                           </div>
                           <div>
                             <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>
-                              Enlace (ej: /residencias, /contacto o https://...)
+                              Enlace (ej: /apartamentos, /contacto o https://...)
                             </Label>
                             <Input
                               value={prop.link || ""}
-                              placeholder="/residencias o https://..."
+                              placeholder="/apartamentos o https://..."
                               onChange={(e) => {
-                                const newProps = [...siteForm.proximo_hogar.properties];
-                                newProps[idx].link = e.target.value;
+                                const newProps = siteForm.proximo_hogar.properties.map((p, i) => 
+                                  i === idx ? { ...p, link: e.target.value } : p
+                                );
                                 setSiteForm({ ...siteForm, proximo_hogar: { ...siteForm.proximo_hogar, properties: newProps } });
                               }}
                               className="mt-0.5 text-xs"
@@ -905,7 +923,6 @@ export function DashboardConfiguracion() {
                             }}
                           />
                         </div>
-
                       ))}
                     </div>
                   </div>
@@ -926,12 +943,12 @@ export function DashboardConfiguracion() {
               </Card>
             </TabsContent>
 
-            {/* Sub-Pestaña: Residencias (6 Modelos) */}
-            <TabsContent value="p_residencias" className="space-y-4">
+            {/* Sub-Pestaña: Apartamentos (6 Modelos) */}
+            <TabsContent value="p_apartamentos" className="space-y-4">
               <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2" style={{ color: "var(--dash-text)" }}>
-                    <Building2 size={18} style={{ color: "var(--dash-accent)" }} /> Página Residencias (6 Modelos)
+                    <Building2 size={18} style={{ color: "var(--dash-accent)" }} /> Página Apartamentos (6 Modelos)
                   </CardTitle>
                   <CardDescription style={{ color: "var(--dash-muted)" }}>
                     Configure los títulos generales y actualice renders, planos y detalles de cada uno de los 6 modelos.
@@ -941,12 +958,12 @@ export function DashboardConfiguracion() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
-                        Título Principal de Residencias
+                        Título Principal de Apartamentos
                       </Label>
                       <textarea
                         rows={2}
-                        value={siteForm.residencias.title}
-                        onChange={(e) => setSiteForm({ ...siteForm, residencias: { ...siteForm.residencias, title: e.target.value } })}
+                        value={siteForm.apartamentos.title}
+                        onChange={(e) => setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, title: e.target.value } })}
                         className="mt-1 w-full p-2.5 rounded-md text-xs font-semibold"
                         style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
                       />
@@ -957,8 +974,8 @@ export function DashboardConfiguracion() {
                       </Label>
                       <textarea
                         rows={2}
-                        value={siteForm.residencias.subtitle}
-                        onChange={(e) => setSiteForm({ ...siteForm, residencias: { ...siteForm.residencias, subtitle: e.target.value } })}
+                        value={siteForm.apartamentos.subtitle}
+                        onChange={(e) => setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, subtitle: e.target.value } })}
                         className="mt-1 w-full p-2.5 rounded-md text-xs"
                         style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
                       />
@@ -971,7 +988,7 @@ export function DashboardConfiguracion() {
                     </Label>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {siteForm.residencias.models.map((mod, idx) => (
+                      {siteForm.apartamentos.models.map((mod, idx) => (
                         <div key={mod.id || idx} className="p-4 rounded-xl border border-white/10 space-y-3" style={{ background: "var(--dash-sidebar)" }}>
                           <div className="flex items-center justify-between border-b border-white/10 pb-2">
                             <span className="text-xs font-bold" style={{ color: "var(--dash-accent)" }}>
@@ -980,15 +997,28 @@ export function DashboardConfiguracion() {
                             <span className="text-[11px] text-muted-foreground">{mod.bedrooms} · {mod.bathrooms}</span>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div>
                               <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Área</Label>
                               <Input
                                 value={mod.area}
                                 onChange={(e) => {
-                                  const newMods = [...siteForm.residencias.models];
+                                  const newMods = [...siteForm.apartamentos.models];
                                   newMods[idx].area = e.target.value;
-                                  setSiteForm({ ...siteForm, residencias: { ...siteForm.residencias, models: newMods } });
+                                  setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                }}
+                                className="mt-0.5 text-xs"
+                                style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Estacionamiento</Label>
+                              <Input
+                                value={mod.parking || ""}
+                                onChange={(e) => {
+                                  const newMods = [...siteForm.apartamentos.models];
+                                  newMods[idx].parking = e.target.value;
+                                  setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
                                 }}
                                 className="mt-0.5 text-xs"
                                 style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
@@ -999,9 +1029,9 @@ export function DashboardConfiguracion() {
                               <Input
                                 value={mod.bedrooms}
                                 onChange={(e) => {
-                                  const newMods = [...siteForm.residencias.models];
+                                  const newMods = [...siteForm.apartamentos.models];
                                   newMods[idx].bedrooms = e.target.value;
-                                  setSiteForm({ ...siteForm, residencias: { ...siteForm.residencias, models: newMods } });
+                                  setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
                                 }}
                                 className="mt-0.5 text-xs"
                                 style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
@@ -1012,9 +1042,9 @@ export function DashboardConfiguracion() {
                               <Input
                                 value={mod.bathrooms}
                                 onChange={(e) => {
-                                  const newMods = [...siteForm.residencias.models];
+                                  const newMods = [...siteForm.apartamentos.models];
                                   newMods[idx].bathrooms = e.target.value;
-                                  setSiteForm({ ...siteForm, residencias: { ...siteForm.residencias, models: newMods } });
+                                  setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
                                 }}
                                 className="mt-0.5 text-xs"
                                 style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
@@ -1022,29 +1052,238 @@ export function DashboardConfiguracion() {
                             </div>
                           </div>
 
+                          {/* Sección: Financiamiento y Costos */}
+                          <div className="pt-2 border-t border-white/5 space-y-2">
+                            <Label className="text-[11px] font-bold" style={{ color: "var(--dash-accent)" }}>Planes de Financiamiento</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                              <div>
+                                <Label className="text-[9px]" style={{ color: "var(--dash-muted)" }}>Precio Total</Label>
+                                <Input
+                                  value={mod.financingTotal || ""}
+                                  onChange={(e) => {
+                                    const newMods = [...siteForm.apartamentos.models];
+                                    newMods[idx].financingTotal = e.target.value;
+                                    setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                  }}
+                                  className="mt-0.5 text-xs h-8"
+                                  style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                                  placeholder="43.895"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[9px]" style={{ color: "var(--dash-muted)" }}>Inicial (35%)</Label>
+                                <Input
+                                  value={mod.financingInicial || ""}
+                                  onChange={(e) => {
+                                    const newMods = [...siteForm.apartamentos.models];
+                                    newMods[idx].financingInicial = e.target.value;
+                                    setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                  }}
+                                  className="mt-0.5 text-xs h-8"
+                                  style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                                  placeholder="15.365"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[9px]" style={{ color: "var(--dash-muted)" }}>Monto Cuota</Label>
+                                <Input
+                                  value={mod.financingCuotasMonto || ""}
+                                  onChange={(e) => {
+                                    const newMods = [...siteForm.apartamentos.models];
+                                    newMods[idx].financingCuotasMonto = e.target.value;
+                                    setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                  }}
+                                  className="mt-0.5 text-xs h-8"
+                                  style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                                  placeholder="2.195"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[9px]" style={{ color: "var(--dash-muted)" }}>N° Cuotas</Label>
+                                <Input
+                                  value={mod.financingCuotasNro || ""}
+                                  onChange={(e) => {
+                                    const newMods = [...siteForm.apartamentos.models];
+                                    newMods[idx].financingCuotasNro = e.target.value;
+                                    setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                  }}
+                                  className="mt-0.5 text-xs h-8"
+                                  style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                                  placeholder="12"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[9px]" style={{ color: "var(--dash-muted)" }}>Cuota Única</Label>
+                                <Input
+                                  value={mod.financingCuotaUnica || ""}
+                                  onChange={(e) => {
+                                    const newMods = [...siteForm.apartamentos.models];
+                                    newMods[idx].financingCuotaUnica = e.target.value;
+                                    setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                  }}
+                                  className="mt-0.5 text-xs h-8"
+                                  style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                                  placeholder="5.000"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="grid grid-cols-2 gap-2">
                             <ImageUploader
-                              label="Render Arquitectónico"
+                              label="Render Arquitectónico Principal"
                               value={mod.render}
                               onChange={(url) => {
-                                const newMods = [...siteForm.residencias.models];
+                                const newMods = [...siteForm.apartamentos.models];
                                 newMods[idx].render = url;
-                                const updatedRes = { ...siteForm.residencias, models: newMods };
-                                setSiteForm({ ...siteForm, residencias: updatedRes });
-                                saveSectionData("residencias", updatedRes);
+                                const updatedRes = { ...siteForm.apartamentos, models: newMods };
+                                setSiteForm({ ...siteForm, apartamentos: updatedRes });
+                                saveSectionData("apartamentos", updatedRes);
                               }}
                             />
                             <ImageUploader
-                              label="Plano / Distribución"
+                              label="Plano / Distribución Principal"
                               value={mod.plan}
                               onChange={(url) => {
-                                const newMods = [...siteForm.residencias.models];
+                                const newMods = [...siteForm.apartamentos.models];
                                 newMods[idx].plan = url;
-                                const updatedRes = { ...siteForm.residencias, models: newMods };
-                                setSiteForm({ ...siteForm, residencias: updatedRes });
-                                saveSectionData("residencias", updatedRes);
+                                const updatedRes = { ...siteForm.apartamentos, models: newMods };
+                                setSiteForm({ ...siteForm, apartamentos: updatedRes });
+                                saveSectionData("apartamentos", updatedRes);
                               }}
                             />
+                          </div>
+
+                          {/* Seccion Galería del Modelo (1 a 12 imágenes) */}
+                          <div className="pt-3 border-t border-white/10 space-y-3">
+                            {(() => {
+                              const modelGallery = mod.gallery && mod.gallery.length > 0
+                                ? mod.gallery
+                                : [mod.render, mod.plan].filter(Boolean);
+
+                              const updateGallery = (newGallery: string[]) => {
+                                const newMods = [...siteForm.apartamentos.models];
+                                newMods[idx] = { ...newMods[idx], gallery: newGallery };
+                                const updatedRes = { ...siteForm.apartamentos, models: newMods };
+                                setSiteForm({ ...siteForm, apartamentos: updatedRes });
+                                saveSectionData("apartamentos", updatedRes);
+                              };
+
+                              const handleAddImage = () => {
+                                if (modelGallery.length >= 12) return;
+                                const nextImg = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80";
+                                updateGallery([...modelGallery, nextImg]);
+                              };
+
+                              const handleRemoveImage = (imgIdx: number) => {
+                                if (modelGallery.length <= 1) return;
+                                updateGallery(modelGallery.filter((_, i) => i !== imgIdx));
+                              };
+
+                              const handleMoveImage = (imgIdx: number, dir: "left" | "right") => {
+                                const targetIdx = dir === "left" ? imgIdx - 1 : imgIdx + 1;
+                                if (targetIdx < 0 || targetIdx >= modelGallery.length) return;
+                                const copy = [...modelGallery];
+                                const temp = copy[imgIdx];
+                                copy[imgIdx] = copy[targetIdx];
+                                copy[targetIdx] = temp;
+                                updateGallery(copy);
+                              };
+
+                              const handleImageChange = (imgIdx: number, newUrl: string) => {
+                                const copy = [...modelGallery];
+                                copy[imgIdx] = newUrl;
+                                updateGallery(copy);
+                              };
+
+                              return (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <Images size={14} style={{ color: "var(--dash-accent)" }} />
+                                      <span className="text-xs font-semibold" style={{ color: "var(--dash-text)" }}>
+                                        Galería del Modelo
+                                      </span>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] px-1.5 py-0 font-mono"
+                                        style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}
+                                      >
+                                        {modelGallery.length} / 12 imágenes
+                                      </Badge>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={modelGallery.length >= 12}
+                                      onClick={handleAddImage}
+                                      className="h-7 px-2 text-[11px] gap-1 font-semibold"
+                                      style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}
+                                    >
+                                      <Plus size={12} /> Añadir Imagen
+                                    </Button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                    {modelGallery.map((imgUrl, imgIdx) => (
+                                      <div
+                                        key={imgIdx}
+                                        className="p-2.5 rounded-lg border border-white/5 space-y-2 relative"
+                                        style={{ background: "var(--dash-card)" }}
+                                      >
+                                        <div className="flex items-center justify-between text-[11px]">
+                                          <span className="font-semibold text-muted-foreground">
+                                            Imagen {imgIdx + 1}
+                                          </span>
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              disabled={imgIdx === 0}
+                                              onClick={() => handleMoveImage(imgIdx, "left")}
+                                              className="h-6 w-6 p-0"
+                                              title="Mover atrás"
+                                            >
+                                              <ArrowLeft size={12} />
+                                            </Button>
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              disabled={imgIdx === modelGallery.length - 1}
+                                              onClick={() => handleMoveImage(imgIdx, "right")}
+                                              className="h-6 w-6 p-0"
+                                              title="Mover adelante"
+                                            >
+                                              <ArrowRight size={12} />
+                                            </Button>
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              disabled={modelGallery.length <= 1}
+                                              onClick={() => handleRemoveImage(imgIdx)}
+                                              className="h-6 w-6 p-0 text-red-400 hover:text-red-300 hover:bg-red-950/40"
+                                              title="Eliminar imagen de la galería"
+                                            >
+                                              <Trash2 size={12} />
+                                            </Button>
+                                          </div>
+                                        </div>
+
+                                        <ImageUploader
+                                          label=""
+                                          value={imgUrl}
+                                          onChange={(newUrl) => handleImageChange(imgIdx, newUrl)}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
 
                         </div>
@@ -1054,13 +1293,13 @@ export function DashboardConfiguracion() {
 
                   <div className="flex justify-end pt-3">
                     <Button
-                      onClick={() => handleSavePortalSection("residencias")}
+                      onClick={() => handleSavePortalSection("apartamentos")}
                       disabled={savingPortal}
                       className="gap-2 font-semibold"
                       style={{ background: "var(--dash-accent)", color: "#0D1810" }}
                     >
                       {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
-                      Guardar Todos los Modelos de Residencias
+                      Guardar Todos los Modelos de Apartamentos
                     </Button>
                   </div>
                 </CardContent>
@@ -1257,6 +1496,882 @@ export function DashboardConfiguracion() {
                     >
                       {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
                       Guardar Información de Contacto & Footer
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Sub-Pestaña: Comercial (Plaza) */}
+            <TabsContent value="p_comercial" className="space-y-4 animate-fade-in">
+              {/* 1. Hero & Cabecera */}
+              <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: "var(--dash-text)" }}>
+                    <Globe size={18} style={{ color: "var(--dash-accent)" }} /> Hero &amp; Portada Principal (Bucare Plaza)
+                  </CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Configure el titular de portada, subtítulo explicativo de cabecera y la imagen de fondo.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Título de Portada (Soporta saltos de línea con Enter)
+                      </Label>
+                      <textarea
+                        rows={3}
+                        value={siteForm.comercial?.hero?.title || ""}
+                        onChange={(e) => setSiteForm({
+                          ...siteForm,
+                          comercial: {
+                            ...siteForm.comercial,
+                            hero: { ...siteForm.comercial.hero, title: e.target.value }
+                          }
+                        })}
+                        className="mt-1 w-full p-2.5 rounded-md text-xs font-semibold"
+                        style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Subtítulo Explicativo
+                      </Label>
+                      <textarea
+                        rows={3}
+                        value={siteForm.comercial?.hero?.subtitle || ""}
+                        onChange={(e) => setSiteForm({
+                          ...siteForm,
+                          comercial: {
+                            ...siteForm.comercial,
+                            hero: { ...siteForm.comercial.hero, subtitle: e.target.value }
+                          }
+                        })}
+                        className="mt-1 w-full p-2.5 rounded-md text-xs"
+                        style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Ocupación (Stats Valor)
+                      </Label>
+                      <Input
+                        value={siteForm.comercial?.hero?.statsNumber || ""}
+                        onChange={(e) => setSiteForm({
+                          ...siteForm,
+                          comercial: {
+                            ...siteForm.comercial,
+                            hero: { ...siteForm.comercial.hero, statsNumber: e.target.value }
+                          }
+                        })}
+                        className="mt-1 text-xs font-bold"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Ocupación Leyenda (Stats Label)
+                      </Label>
+                      <Input
+                        value={siteForm.comercial?.hero?.statsLabel || ""}
+                        onChange={(e) => setSiteForm({
+                          ...siteForm,
+                          comercial: {
+                            ...siteForm.comercial,
+                            hero: { ...siteForm.comercial.hero, statsLabel: e.target.value }
+                          }
+                        })}
+                        className="mt-1 text-xs"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Imagen Principal (Hero Background - Fallback)
+                      </Label>
+                      <div className="mt-1">
+                        <ImageUploader
+                          value={siteForm.comercial?.hero?.mainImage || ""}
+                          onChange={(url) => setSiteForm({
+                            ...siteForm,
+                            comercial: {
+                              ...siteForm.comercial,
+                              hero: { ...siteForm.comercial.hero, mainImage: url }
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Video Principal (Hero Background - Reproducción Automática y Bucle)
+                      </Label>
+                      <div className="mt-1">
+                        <VideoUploader
+                          value={siteForm.comercial?.hero?.video || ""}
+                          onChange={(url) => setSiteForm({
+                            ...siteForm,
+                            comercial: {
+                              ...siteForm.comercial,
+                              hero: { ...siteForm.comercial.hero, video: url }
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Redes Sociales del Footer */}
+              <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: "var(--dash-text)" }}>
+                    <Share2 size={18} style={{ color: "var(--dash-accent)" }} /> Redes Sociales del Footer
+                  </CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Configure los enlaces para las redes sociales en el pie de página comercial.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>Enlace de Instagram</Label>
+                      <Input
+                        value={siteForm.comercial?.socials?.instagram || ""}
+                        onChange={(e) => {
+                          const updated = {
+                            ...siteForm.comercial,
+                            socials: {
+                              ...(siteForm.comercial?.socials || {}),
+                              instagram: e.target.value
+                            }
+                          };
+                          setSiteForm({ ...siteForm, comercial: updated });
+                          saveSectionData("comercial", updated);
+                        }}
+                        className="mt-1 text-xs"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>Enlace de Facebook</Label>
+                      <Input
+                        value={siteForm.comercial?.socials?.facebook || ""}
+                        onChange={(e) => {
+                          const updated = {
+                            ...siteForm.comercial,
+                            socials: {
+                              ...(siteForm.comercial?.socials || {}),
+                              facebook: e.target.value
+                            }
+                          };
+                          setSiteForm({ ...siteForm, comercial: updated });
+                          saveSectionData("comercial", updated);
+                        }}
+                        className="mt-1 text-xs"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 2. Sección El Proyecto */}
+              <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: "var(--dash-text)" }}>
+                    <Building2 size={18} style={{ color: "var(--dash-accent)" }} /> Sección "El Proyecto"
+                  </CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Edite los títulos y párrafos detallados de la sección del proyecto comercial.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Subtítulo de Sección (ej: 01 El Proyecto)
+                      </Label>
+                      <Input
+                        value={siteForm.comercial?.proyecto?.subtitle || ""}
+                        onChange={(e) => setSiteForm({
+                          ...siteForm,
+                          comercial: {
+                            ...siteForm.comercial,
+                            proyecto: { ...siteForm.comercial.proyecto, subtitle: e.target.value }
+                          }
+                        })}
+                        className="mt-1 text-xs"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Título Principal del Proyecto
+                      </Label>
+                      <Input
+                        value={siteForm.comercial?.proyecto?.title || ""}
+                        onChange={(e) => setSiteForm({
+                          ...siteForm,
+                          comercial: {
+                            ...siteForm.comercial,
+                            proyecto: { ...siteForm.comercial.proyecto, title: e.target.value }
+                          }
+                        })}
+                        className="mt-1 text-xs"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Párrafo de Introducción 1
+                      </Label>
+                      <textarea
+                        rows={3}
+                        value={siteForm.comercial?.proyecto?.desc1 || ""}
+                        onChange={(e) => setSiteForm({
+                          ...siteForm,
+                          comercial: {
+                            ...siteForm.comercial,
+                            proyecto: { ...siteForm.comercial.proyecto, desc1: e.target.value }
+                          }
+                        })}
+                        className="mt-1 w-full p-2.5 rounded-md text-xs"
+                        style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Párrafo de Introducción 2
+                      </Label>
+                      <textarea
+                        rows={3}
+                        value={siteForm.comercial?.proyecto?.desc2 || ""}
+                        onChange={(e) => setSiteForm({
+                          ...siteForm,
+                          comercial: {
+                            ...siteForm.comercial,
+                            proyecto: { ...siteForm.comercial.proyecto, desc2: e.target.value }
+                          }
+                        })}
+                        className="mt-1 w-full p-2.5 rounded-md text-xs"
+                        style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Imagen de "El Proyecto" (Preventa - Fallback)
+                      </Label>
+                      <div className="mt-1">
+                        <ImageUploader
+                          value={siteForm.comercial?.proyecto?.image || ""}
+                          onChange={(url) => setSiteForm({
+                            ...siteForm,
+                            comercial: {
+                              ...siteForm.comercial,
+                              proyecto: { ...siteForm.comercial.proyecto, image: url }
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                        Video de "El Proyecto" (Preventa - Reproducción Automática y Bucle)
+                      </Label>
+                      <div className="mt-1">
+                        <VideoUploader
+                          value={siteForm.comercial?.proyecto?.video || ""}
+                          onChange={(url) => setSiteForm({
+                            ...siteForm,
+                            comercial: {
+                              ...siteForm.comercial,
+                              proyecto: { ...siteForm.comercial.proyecto, video: url }
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 3. Métricas y Estadísticas */}
+              <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: "var(--dash-text)" }}>
+                    <SlidersHorizontal size={18} style={{ color: "var(--dash-accent)" }} /> Barra de Estadísticas (4 Métricas)
+                  </CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Configure las cifras cuantitativas de la plaza comercial.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    {(siteForm.comercial?.stats || []).map((s, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3.5 rounded-lg border"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)" }}
+                      >
+                        <Label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--dash-accent)" }}>
+                          Métrica {idx + 1}
+                        </Label>
+                        <div className="space-y-2">
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Valor</Label>
+                            <Input
+                              value={s.valor}
+                              onChange={(e) => {
+                                const newStats = [...siteForm.comercial.stats];
+                                newStats[idx].valor = e.target.value;
+                                setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, stats: newStats } });
+                              }}
+                              className="h-7 text-xs font-semibold"
+                              style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Unidad</Label>
+                            <Input
+                              value={s.unidad}
+                              onChange={(e) => {
+                                const newStats = [...siteForm.comercial.stats];
+                                newStats[idx].unidad = e.target.value;
+                                setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, stats: newStats } });
+                              }}
+                              className="h-7 text-xs font-semibold"
+                              style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Etiqueta</Label>
+                            <Input
+                              value={s.label}
+                              onChange={(e) => {
+                                const newStats = [...siteForm.comercial.stats];
+                                newStats[idx].label = e.target.value;
+                                setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, stats: newStats } });
+                              }}
+                              className="h-7 text-xs"
+                              style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 4. Ventajas Comerciales */}
+              <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: "var(--dash-text)" }}>
+                    <Shield size={18} style={{ color: "var(--dash-accent)" }} /> Ventajas Competitivas
+                  </CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Edite los títulos y descripciones detalladas de las 5 ventajas de la plaza.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(siteForm.comercial?.ventajas || []).map((v, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3.5 rounded-lg border space-y-2.5"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)" }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[10px] uppercase font-bold" style={{ color: "var(--dash-accent)" }}>
+                            Ventaja {v.num}
+                          </Label>
+                        </div>
+                        <div>
+                          <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Título</Label>
+                          <Input
+                            value={v.titulo}
+                            onChange={(e) => {
+                              const newVent = [...siteForm.comercial.ventajas];
+                              newVent[idx].titulo = e.target.value;
+                              setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, ventajas: newVent } });
+                            }}
+                            className="h-8 text-xs font-semibold"
+                            style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Descripción Corta</Label>
+                          <textarea
+                            rows={2}
+                            value={v.desc}
+                            onChange={(e) => {
+                              const newVent = [...siteForm.comercial.ventajas];
+                              newVent[idx].desc = e.target.value;
+                              setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, ventajas: newVent } });
+                            }}
+                            className="w-full p-2 rounded-md text-xs"
+                            style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 5. Locales & Marcas Comerciales */}
+              <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: "var(--dash-text)" }}>
+                    <Images size={18} style={{ color: "var(--dash-accent)" }} /> Marcas y Locales Comerciales
+                  </CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Gestione y configure los 4 locales destacados para el carrusel de espacios de Bucare Plaza.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {(siteForm.comercial?.locales || []).map((l, idx) => (
+                      <div
+                        key={l.id}
+                        className="p-4 rounded-xl border space-y-3"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)" }}
+                      >
+                        <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: "var(--dash-border)" }}>
+                          <span className="text-xs font-bold font-mono" style={{ color: "var(--dash-accent)" }}>
+                            LOCAL {l.id}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Nombre de Marca</Label>
+                            <Input
+                              value={l.nombre}
+                              onChange={(e) => {
+                                const newLocs = [...siteForm.comercial.locales];
+                                newLocs[idx].nombre = e.target.value;
+                                setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, locales: newLocs } });
+                              }}
+                              className="h-8 text-xs font-bold"
+                              style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Categoría</Label>
+                            <Input
+                              value={l.categoria}
+                              onChange={(e) => {
+                                const newLocs = [...siteForm.comercial.locales];
+                                newLocs[idx].categoria = e.target.value;
+                                setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, locales: newLocs } });
+                              }}
+                              className="h-8 text-xs"
+                              style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Área Comercial</Label>
+                            <Input
+                              value={l.area}
+                              onChange={(e) => {
+                                const newLocs = [...siteForm.comercial.locales];
+                                newLocs[idx].area = e.target.value;
+                                setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, locales: newLocs } });
+                              }}
+                              className="h-8 text-xs"
+                              style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Estado / Status (ej: Ancla, Activo, Disponible)</Label>
+                            <Input
+                              value={l.status}
+                              onChange={(e) => {
+                                const newLocs = [...siteForm.comercial.locales];
+                                newLocs[idx].status = e.target.value;
+                                setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, locales: newLocs } });
+                              }}
+                              className="h-8 text-xs"
+                              style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Descripción de Marca</Label>
+                          <textarea
+                            rows={2}
+                            value={l.desc}
+                            onChange={(e) => {
+                              const newLocs = [...siteForm.comercial.locales];
+                              newLocs[idx].desc = e.target.value;
+                              setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, locales: newLocs } });
+                            }}
+                            className="w-full p-2 rounded-md text-xs"
+                            style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Fotografía del Local</Label>
+                          <div className="mt-1">
+                            <ImageUploader
+                              value={l.img}
+                              onChange={(url) => {
+                                const newLocs = [...siteForm.comercial.locales];
+                                newLocs[idx].img = url;
+                                setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, locales: newLocs } });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 6. Distribución de Áreas */}
+              <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: "var(--dash-text)" }}>
+                    <LayoutDashboard size={18} style={{ color: "var(--dash-accent)" }} /> 02 Distribución de Áreas
+                  </CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Configure los textos, métricas y listados de locales de Planta Baja y Planta Alta.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+
+                  {/* Header texts */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-[10px] uppercase tracking-wider block mb-1.5" style={{ color: "var(--dash-accent)" }}>Subtítulo (etiqueta dorada)</Label>
+                      <Input
+                        value={siteForm.comercial?.distribucion?.subtitulo || ""}
+                        onChange={(e) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, subtitulo: e.target.value } } })}
+                        className="h-8 text-xs"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] uppercase tracking-wider block mb-1.5" style={{ color: "var(--dash-accent)" }}>Título principal (usa \n para salto de línea)</Label>
+                      <Input
+                        value={siteForm.comercial?.distribucion?.titulo || ""}
+                        onChange={(e) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, titulo: e.target.value } } })}
+                        className="h-8 text-xs font-semibold"
+                        style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Stats grid */}
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--dash-muted)" }}>Métricas de resumen</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {(siteForm.comercial?.distribucion?.statsGrid || []).map((st, idx) => (
+                        <div key={idx} className="p-3 rounded-lg border space-y-2" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)" }}>
+                          <Label className="text-[10px] font-bold" style={{ color: "var(--dash-accent)" }}>Métrica {idx + 1}</Label>
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Valor</Label>
+                            <Input value={st.value} onChange={(e) => { const g = [...siteForm.comercial.distribucion.statsGrid]; g[idx] = { ...g[idx], value: e.target.value }; setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, statsGrid: g } } }); }} className="h-7 text-xs font-bold" style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Unidad (ej: m², dejar vacío si no aplica)</Label>
+                            <Input value={st.unit || ""} onChange={(e) => { const g = [...siteForm.comercial.distribucion.statsGrid]; g[idx] = { ...g[idx], unit: e.target.value }; setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, statsGrid: g } } }); }} className="h-7 text-xs" style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Etiqueta</Label>
+                            <Input value={st.label} onChange={(e) => { const g = [...siteForm.comercial.distribucion.statsGrid]; g[idx] = { ...g[idx], label: e.target.value }; setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, statsGrid: g } } }); }} className="h-7 text-xs" style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Planta Baja & Alta side by side */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {/* Planta Baja */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 border-b pb-2" style={{ borderColor: "var(--dash-border)" }}>
+                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--dash-accent)" }}>Planta Baja</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Encabezado</Label>
+                          <Input value={siteForm.comercial?.distribucion?.plantaBaja?.label || ""} onChange={(e) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaBaja: { ...siteForm.comercial.distribucion.plantaBaja, label: e.target.value } } } })} className="h-7 text-xs font-semibold" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Rango (ej: Locales del 1 al 5)</Label>
+                          <Input value={siteForm.comercial?.distribucion?.plantaBaja?.rangLabel || ""} onChange={(e) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaBaja: { ...siteForm.comercial.distribucion.plantaBaja, rangLabel: e.target.value } } } })} className="h-7 text-xs" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {(siteForm.comercial?.distribucion?.plantaBaja?.items || []).map((item, idx) => (
+                          <div key={idx} className="grid grid-cols-2 gap-2 p-2 rounded-lg" style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)" }}>
+                            <div>
+                              <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Nombre</Label>
+                              <Input value={item.name} onChange={(e) => { const items = [...siteForm.comercial.distribucion.plantaBaja.items]; items[idx] = { ...items[idx], name: e.target.value }; setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaBaja: { ...siteForm.comercial.distribucion.plantaBaja, items } } } }); }} className="h-7 text-xs" style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Área</Label>
+                              <Input value={item.area} onChange={(e) => { const items = [...siteForm.comercial.distribucion.plantaBaja.items]; items[idx] = { ...items[idx], area: e.target.value }; setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaBaja: { ...siteForm.comercial.distribucion.plantaBaja, items } } } }); }} className="h-7 text-xs" style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div>
+                        <Label className="text-[10px] uppercase tracking-wider" style={{ color: "var(--dash-muted)" }}>Subtotal</Label>
+                        <Input value={siteForm.comercial?.distribucion?.plantaBaja?.subtotal || ""} onChange={(e) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaBaja: { ...siteForm.comercial.distribucion.plantaBaja, subtotal: e.target.value } } } })} className="h-7 text-xs font-bold" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-accent)" }} />
+                      </div>
+                    </div>
+
+                    {/* Planta Alta */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 border-b pb-2" style={{ borderColor: "var(--dash-border)" }}>
+                        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--dash-accent)" }}>Planta Alta</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Encabezado</Label>
+                          <Input value={siteForm.comercial?.distribucion?.plantaAlta?.label || ""} onChange={(e) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaAlta: { ...siteForm.comercial.distribucion.plantaAlta, label: e.target.value } } } })} className="h-7 text-xs font-semibold" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Rango (ej: Locales del 6 al 10)</Label>
+                          <Input value={siteForm.comercial?.distribucion?.plantaAlta?.rangLabel || ""} onChange={(e) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaAlta: { ...siteForm.comercial.distribucion.plantaAlta, rangLabel: e.target.value } } } })} className="h-7 text-xs" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {(siteForm.comercial?.distribucion?.plantaAlta?.items || []).map((item, idx) => (
+                          <div key={idx} className="grid grid-cols-2 gap-2 p-2 rounded-lg" style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)" }}>
+                            <div>
+                              <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Nombre</Label>
+                              <Input value={item.name} onChange={(e) => { const items = [...siteForm.comercial.distribucion.plantaAlta.items]; items[idx] = { ...items[idx], name: e.target.value }; setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaAlta: { ...siteForm.comercial.distribucion.plantaAlta, items } } } }); }} className="h-7 text-xs" style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Área</Label>
+                              <Input value={item.area} onChange={(e) => { const items = [...siteForm.comercial.distribucion.plantaAlta.items]; items[idx] = { ...items[idx], area: e.target.value }; setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaAlta: { ...siteForm.comercial.distribucion.plantaAlta, items } } } }); }} className="h-7 text-xs" style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div>
+                        <Label className="text-[10px] uppercase tracking-wider" style={{ color: "var(--dash-muted)" }}>Subtotal</Label>
+                        <Input value={siteForm.comercial?.distribucion?.plantaAlta?.subtotal || ""} onChange={(e) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaAlta: { ...siteForm.comercial.distribucion.plantaAlta, subtotal: e.target.value } } } })} className="h-7 text-xs font-bold" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-accent)" }} />
+                      </div>
+                    </div>
+                  </div>
+
+                </CardContent>
+              </Card>
+
+              {/* Botón de Guardado General */}
+              <div className="flex justify-end pt-3">
+                <Button
+                  onClick={() => handleSavePortalSection("comercial" as any)}
+                  disabled={savingPortal}
+                  className="gap-2 font-semibold"
+                  style={{ background: "var(--dash-accent)", color: "#0D1810" }}
+                >
+                  {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
+                  Guardar Cambios de Bucare Plaza
+                </Button>
+              </div>
+            </TabsContent>
+
+            {/* Sub-Pestaña: FAQ (Todo lo que necesitas saber...) */}
+            <TabsContent value="p_faq" className="space-y-4 animate-fade-in">
+              <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: "var(--dash-text)" }}>
+                    <Globe size={18} style={{ color: "var(--dash-accent)" }} /> Preguntas Frecuentes (FAQ Home)
+                  </CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Edite el título principal de la sección "Todo lo que necesitas saber..." y los ítems numerados adyacentes del Home.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                      Título Principal de la Sección (Soporta saltos de línea con Enter)
+                    </Label>
+                    <textarea
+                      rows={3}
+                      value={siteForm.faq?.title || ""}
+                      onChange={(e) =>
+                        setSiteForm({
+                          ...siteForm,
+                          faq: { ...(siteForm.faq || { title: "", items: [] }), title: e.target.value },
+                        })
+                      }
+                      className="mt-1 w-full p-2.5 rounded-md text-xs font-semibold"
+                      style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
+                    />
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold block" style={{ color: "var(--dash-text)" }}>
+                        Ítems Enumerados (Preguntas y Respuestas)
+                      </Label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const currentItems = siteForm.faq?.items || [];
+                          const newItems = [...currentItems, { q: "Nueva Pregunta", a: "Respuesta descriptiva aquí." }];
+                          setSiteForm({
+                            ...siteForm,
+                            faq: { ...(siteForm.faq || { title: "", items: [] }), items: newItems },
+                          });
+                        }}
+                        className="gap-1 text-xs"
+                      >
+                        <Plus size={14} /> Añadir Pregunta
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {(siteForm.faq?.items || []).map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="p-4 rounded-xl border border-white/10 space-y-3 relative"
+                          style={{ background: "var(--dash-sidebar)" }}
+                        >
+                          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                            <span className="text-xs font-bold" style={{ color: "var(--dash-accent)" }}>
+                              Ítem {String(idx + 1).padStart(2, "0")}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {idx > 0 && (
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-muted-foreground hover:text-white"
+                                  onClick={() => {
+                                    const items = [...(siteForm.faq?.items || [])];
+                                    const temp = items[idx];
+                                    items[idx] = items[idx - 1];
+                                    items[idx - 1] = temp;
+                                    setSiteForm({
+                                      ...siteForm,
+                                      faq: { ...(siteForm.faq || { title: "", items: [] }), items },
+                                    });
+                                  }}
+                                >
+                                  ↑
+                                </Button>
+                              )}
+                              {idx < (siteForm.faq?.items?.length || 0) - 1 && (
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-muted-foreground hover:text-white"
+                                  onClick={() => {
+                                    const items = [...(siteForm.faq?.items || [])];
+                                    const temp = items[idx];
+                                    items[idx] = items[idx + 1];
+                                    items[idx + 1] = temp;
+                                    setSiteForm({
+                                      ...siteForm,
+                                      faq: { ...(siteForm.faq || { title: "", items: [] }), items },
+                                    });
+                                  }}
+                                >
+                                  ↓
+                                </Button>
+                              )}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                onClick={() => {
+                                  const items = (siteForm.faq?.items || []).filter((_, i) => i !== idx);
+                                  setSiteForm({
+                                    ...siteForm,
+                                    faq: { ...(siteForm.faq || { title: "", items: [] }), items },
+                                  });
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>
+                              Pregunta (Título del ítem)
+                            </Label>
+                            <Input
+                              value={item.q}
+                              onChange={(e) => {
+                                const items = [...(siteForm.faq?.items || [])];
+                                items[idx] = { ...items[idx], q: e.target.value };
+                                setSiteForm({
+                                  ...siteForm,
+                                  faq: { ...(siteForm.faq || { title: "", items: [] }), items },
+                                });
+                              }}
+                              className="mt-1 text-xs font-semibold"
+                              style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>
+                              Respuesta (Descripción del ítem)
+                            </Label>
+                            <textarea
+                              rows={2}
+                              value={item.a}
+                              onChange={(e) => {
+                                const items = [...(siteForm.faq?.items || [])];
+                                items[idx] = { ...items[idx], a: e.target.value };
+                                setSiteForm({
+                                  ...siteForm,
+                                  faq: { ...(siteForm.faq || { title: "", items: [] }), items },
+                                });
+                              }}
+                              className="mt-1 w-full p-2.5 rounded-md text-xs"
+                              style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-3">
+                    <Button
+                      onClick={() => handleSavePortalSection("faq")}
+                      disabled={savingPortal}
+                      className="gap-2 font-semibold"
+                      style={{ background: "var(--dash-accent)", color: "#0D1810" }}
+                    >
+                      {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
+                      Guardar Sección FAQ Home
                     </Button>
                   </div>
                 </CardContent>

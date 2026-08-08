@@ -99,7 +99,7 @@ model AiConfig {
 
 model SiteContent {
   id        String   @id @default(uuid())
-  section   String   @unique // "hero", "proximo_hogar", "residencias", "areas"
+  section   String   @unique // "hero", "proximo_hogar", "apartamentos", "areas"
   data      String   // JSON stringificado con textos e imágenes
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -52,7 +52,7 @@ export async function getSession(req: Request, res: Response, next: NextFunction
               sender: 'AI',
               content: project === 'BUCARE_PLAZA'
                 ? '¡Hola! Bienvenido a Bucare Plaza Comercial. ¿En qué puedo ayudarte hoy sobre nuestros locales y espacios comerciales?'
-                : '¡Hola! Bienvenido a Bucare Suite. ¿En qué puedo ayudarte hoy sobre nuestros apartamentos y residencias de lujo?',
+                : '¡Hola! Bienvenido a Bucare Suite. ¿En qué puedo ayudarte hoy sobre nuestros apartamentos de lujo?',
             },
           },
         },

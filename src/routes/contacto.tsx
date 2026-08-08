@@ -10,9 +10,9 @@ export const Route = createFileRoute("/contacto")({
   head: () => ({
     meta: [
       { title: "Contacto — Bucare Suite" },
-      { name: "description", content: "Agenda una visita privada o solicita información sobre las residencias de Bucare Suite en San Cristóbal, Nueva Guayana." },
+      { name: "description", content: "Agenda una visita privada o solicita información sobre los apartamentos de Bucare Suite en San Cristóbal, Nueva Guayana." },
       { property: "og:title", content: "Contacto — Bucare Suite" },
-      { property: "og:description", content: "Reserva tu visita a Bucare Suite en Nueva Guayana." },
+      { property: "og:description", content: "Reserva tu visita a Bucare Suite en Nueva Guayana y conoce los apartamentos disponibles." },
       { property: "og:image", content: "/logo.webp" },
     ],
   }),
@@ -106,7 +106,7 @@ function Contacto() {
                 <label className="block text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-2">Motivo de Interés</label>
                 <select className="w-full bg-transparent border-b border-border py-3 text-xs sm:text-sm focus:outline-none focus:border-foreground">
                   <option>Agendar una visita guiada</option>
-                  <option>Información de modelos y residencias</option>
+                  <option>Información de modelos y apartamentos</option>
                   <option>Planes de financiamiento</option>
                   <option>Inversión inmobiliaria</option>
                   <option>Otro</option>

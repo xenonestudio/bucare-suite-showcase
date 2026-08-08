@@ -15,6 +15,7 @@ import citasRoutes from './modules/citas/citas.routes.js';
 import chatRoutes from './modules/chat/chat.routes.js';
 import siteContentRoutes from './modules/site-content/siteContent.routes.js';
 import uploadRoutes from './modules/upload/upload.routes.js';
+import whatsappRoutes from './modules/whatsapp/whatsapp.routes.js';
 import path from 'path';
 
 const app: Application = express();
@@ -87,6 +88,7 @@ app.use('/api/v1/citas', citasRoutes);
 app.use('/api/v1/chat', chatRoutes);
 app.use('/api/v1/site-content', siteContentRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/whatsapp', whatsappRoutes);
 
 
 

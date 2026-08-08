@@ -25,7 +25,7 @@ C:\Windows\System32\OpenSSH\scp.exe -i "$SSH_KEY" -o StrictHostKeyChecking=no ec
 C:\Windows\System32\OpenSSH\scp.exe -i "$SSH_KEY" -o StrictHostKeyChecking=no nginx_bucare.conf "$($VM_USER)@$($VM_IP):/home/deploy/nginx_bucare.conf"
 
 Write-Host "=== 5. Extrayendo y reiniciando servicios en la VM ===" -ForegroundColor Cyan
-C:\Windows\System32\OpenSSH\ssh.exe -i "$SSH_KEY" -o StrictHostKeyChecking=no "$($VM_USER)@$($VM_IP)" "tar -xzf /home/deploy/frontend.tar.gz --overwrite -C $VM_DIR/ && tar -xzf /home/deploy/deploy.tar.gz --overwrite -C $VM_DIR/backend/ && sudo cp /home/deploy/nginx_bucare.conf /etc/nginx/sites-available/bucare && sudo nginx -s reload && cd $VM_DIR/backend && npx prisma db push && npx prisma generate && pm2 delete all && cd $VM_DIR && pm2 start ecosystem.config.cjs"
+C:\Windows\System32\OpenSSH\ssh.exe -i "$SSH_KEY" -o StrictHostKeyChecking=no "$($VM_USER)@$($VM_IP)" "tar -xzf /home/deploy/frontend.tar.gz --overwrite -C $VM_DIR/ && tar -xzf /home/deploy/deploy.tar.gz --overwrite -C $VM_DIR/backend/ && sudo cp /home/deploy/nginx_bucare.conf /etc/nginx/sites-available/bucare && sudo nginx -s reload && cd $VM_DIR/backend && npm install && npx prisma db push && npx prisma generate && pm2 delete all && cd $VM_DIR && pm2 start ecosystem.config.cjs"
 
 
 Write-Host "=== 6. Limpiando archivos locales ===" -ForegroundColor Cyan
