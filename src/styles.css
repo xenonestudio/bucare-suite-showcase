@@ -103,6 +103,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
@@ -115,6 +116,7 @@
   --background: #F5F2EC;
   --foreground: #202020;
   --primary: #213B26;
+  --primary-foreground: #FFFFFF;
   --muted: #EFEBE1;
   --muted-foreground: #8B9983;
   --border: #A39B93;
@@ -132,6 +134,15 @@
   --dash-accent: #E1B668;
   --dash-accent-dim: rgba(225, 182, 104, 0.15);
   --dash-green: #213B26;
+}
+
+/* Ensure strong white text contrast for primary green (#213B26) buttons */
+.bg-primary,
+button.bg-primary,
+a.bg-primary,
+[class*="bg-[#213B26]"],
+[class*="bg-[#213b26]"] {
+  color: #ffffff !important;
 }
 
 @layer base {
