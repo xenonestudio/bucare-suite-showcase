@@ -1052,6 +1052,64 @@ export function DashboardConfiguracion() {
                             </div>
                           </div>
 
+                          {/* Balcón */}
+                          <div>
+                            <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Balcón / Terraza</Label>
+                            <Input
+                              value={mod.balcony || ""}
+                              onChange={(e) => {
+                                const newMods = [...siteForm.apartamentos.models];
+                                newMods[idx].balcony = e.target.value;
+                                setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                              }}
+                              className="mt-0.5 text-xs"
+                              style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                            />
+                          </div>
+
+                          {/* Distribución Interna */}
+                          <div className="pt-2 border-t border-white/5 space-y-2">
+                            <Label className="text-[11px] font-bold" style={{ color: "var(--dash-accent)" }}>Distribución Interna</Label>
+                            <div className="space-y-1.5">
+                              {(mod.distribution || []).map((item: string, dIdx: number) => (
+                                <div key={dIdx} className="flex gap-1.5 items-center">
+                                  <Input
+                                    value={item}
+                                    onChange={(e) => {
+                                      const newMods = [...siteForm.apartamentos.models];
+                                      const dist = [...(newMods[idx].distribution || [])];
+                                      dist[dIdx] = e.target.value;
+                                      newMods[idx] = { ...newMods[idx], distribution: dist };
+                                      setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                    }}
+                                    className="text-xs flex-1 h-7"
+                                    style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const newMods = [...siteForm.apartamentos.models];
+                                      const dist = (newMods[idx].distribution || []).filter((_: string, i: number) => i !== dIdx);
+                                      newMods[idx] = { ...newMods[idx], distribution: dist };
+                                      setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                    }}
+                                    className="text-xs px-1.5 py-1 rounded shrink-0"
+                                    style={{ background: "rgba(239,68,68,0.15)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)" }}
+                                  >✕</button>
+                                </div>
+                              ))}
+                              <button
+                                onClick={() => {
+                                  const newMods = [...siteForm.apartamentos.models];
+                                  const dist = [...(newMods[idx].distribution || []), ""];
+                                  newMods[idx] = { ...newMods[idx], distribution: dist };
+                                  setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                }}
+                                className="text-[10px] px-2.5 py-1 rounded"
+                                style={{ background: "rgba(225,182,104,0.1)", color: "var(--dash-accent)", border: "1px solid rgba(225,182,104,0.3)" }}
+                              >+ Agregar ítem</button>
+                            </div>
+                          </div>
+
                           {/* Sección: Financiamiento y Costos */}
                           <div className="pt-2 border-t border-white/5 space-y-2">
                             <Label className="text-[11px] font-bold" style={{ color: "var(--dash-accent)" }}>Planes de Financiamiento</Label>
