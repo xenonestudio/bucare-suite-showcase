@@ -1770,6 +1770,45 @@ export function DashboardConfiguracion() {
                     </div>
                   </div>
 
+                  {/* Bullets */}
+                  <div>
+                    <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>
+                      Puntos Destacados (íconos de bala)
+                    </Label>
+                    <div className="mt-2 space-y-2">
+                      {(siteForm.comercial?.proyecto?.bullets || []).map((b: { text: string }, idx: number) => (
+                        <div key={idx} className="flex gap-2 items-center">
+                          <Input
+                            value={b.text}
+                            onChange={(e) => {
+                              const bullets = [...(siteForm.comercial?.proyecto?.bullets || [])];
+                              bullets[idx] = { text: e.target.value };
+                              setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, proyecto: { ...siteForm.comercial.proyecto, bullets } } });
+                            }}
+                            className="text-xs flex-1"
+                            style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                          />
+                          <button
+                            onClick={() => {
+                              const bullets = (siteForm.comercial?.proyecto?.bullets || []).filter((_: any, i: number) => i !== idx);
+                              setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, proyecto: { ...siteForm.comercial.proyecto, bullets } } });
+                            }}
+                            className="text-xs px-2 py-1 rounded"
+                            style={{ background: "rgba(239,68,68,0.15)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)" }}
+                          >✕</button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          const bullets = [...(siteForm.comercial?.proyecto?.bullets || []), { text: "" }];
+                          setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, proyecto: { ...siteForm.comercial.proyecto, bullets } } });
+                        }}
+                        className="text-xs px-3 py-1.5 rounded"
+                        style={{ background: "rgba(225,182,104,0.1)", color: "var(--dash-accent)", border: "1px solid rgba(225,182,104,0.3)" }}
+                      >+ Agregar punto</button>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-xs" style={{ color: "var(--dash-muted)" }}>

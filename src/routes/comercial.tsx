@@ -262,18 +262,22 @@ function BucarePlazaPage() {
               {comData?.proyecto?.desc2 || "Ubicada en la planta baja del complejo Bucare Suite & Plaza, tiene frente a dos calles principales y comparte flujo de visitas con los residentes de las 60 unidades habitacionales de la torre."}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {[
-                { icon: MapPin, text: "San Cristóbal, Estado Táchira" },
-                { icon: Building2, text: "Planta baja + segunda planta de oficinas" },
-                { icon: Users, text: "Flujo estimado: 2,500 personas/día" },
-              ].map(({ icon: Icon, text }) => (
-                <div key={text} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(225,182,104,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon size={16} color={C.gold} />
+              {(comData?.proyecto?.bullets || [
+                { text: "San Cristóbal, Estado Táchira" },
+                { text: "Planta baja + segunda planta de oficinas" },
+                { text: "Flujo estimado: 2,500 personas/día" },
+              ]).map((b, i) => {
+                const icons = [MapPin, Building2, Users];
+                const Icon = icons[i % icons.length];
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(225,182,104,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon size={16} color={C.gold} />
+                    </div>
+                    <span style={{ color: C.text, fontSize: "0.85rem" }}>{b.text}</span>
                   </div>
-                  <span style={{ color: C.text, fontSize: "0.85rem" }}>{text}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

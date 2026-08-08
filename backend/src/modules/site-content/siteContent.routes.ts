@@ -98,6 +98,11 @@ const DEFAULT_SITE_CONTENT: Record<string, any> = {
       desc2: "Ubicada en la planta baja del complejo Bucare Suite & Plaza, tiene frente a dos calles principales y comparte flujo de visitas con los residentes de las 60 unidades habitacionales de la torre.",
       image: "/comercial/027.jpeg",
       video: "",
+      bullets: [
+        { text: "San Cristóbal, Estado Táchira" },
+        { text: "Planta baja + segunda planta de oficinas" },
+        { text: "Flujo estimado: 2,500 personas/día" },
+      ],
     },
     stats: [
       { valor: "1,200", unidad: "m²", label: "Área Total Construida" },

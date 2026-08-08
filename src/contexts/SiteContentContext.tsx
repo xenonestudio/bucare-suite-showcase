@@ -77,6 +77,7 @@ export interface SiteContentData {
       desc2: string;
       image: string;
       video?: string;
+      bullets?: Array<{ text: string }>;
     };
     stats: Array<{ valor: string; unidad: string; label: string }>;
     ventajas: Array<{ num: string; titulo: string; desc: string }>;
@@ -224,6 +225,11 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
       desc2: "Ubicada en la planta baja del complejo Bucare Suite & Plaza, tiene frente a dos calles principales y comparte flujo de visitas con los residentes de las 60 unidades habitacionales de la torre.",
       image: "/comercial/027.jpeg",
       video: "",
+      bullets: [
+        { text: "San Cristóbal, Estado Táchira" },
+        { text: "Planta baja + segunda planta de oficinas" },
+        { text: "Flujo estimado: 2,500 personas/día" },
+      ],
     },
     stats: [
       { valor: "1,200", unidad: "m²", label: "Área Total Construida" },
@@ -385,6 +391,9 @@ function mergeContent(prev: SiteContentData, json: any): SiteContentData {
         ...prev.comercial.proyecto,
         ...(com.proyecto || {}),
         video: com.proyecto?.video !== undefined ? com.proyecto.video : prev.comercial.proyecto.video,
+        bullets: (com.proyecto?.bullets && com.proyecto.bullets.length > 0)
+          ? com.proyecto.bullets
+          : prev.comercial.proyecto.bullets,
       },
       stats: (com.stats && com.stats.length > 0)
         ? com.stats.map((st: any, idx: number) => ({
