@@ -365,10 +365,12 @@ function BucarePlazaPage() {
                 ))}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "14px", borderTop: `1px solid ${C.border}`, fontSize: "0.88rem", fontWeight: 700 }}>
-                <span style={{ color: C.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subtotal {comData?.distribucion?.plantaBaja?.label || "Planta Baja"}</span>
-                <span style={{ color: C.gold }}>{comData?.distribucion?.plantaBaja?.subtotal || "207.28 m²"}</span>
-              </div>
+              {comData?.distribucion?.showSubtotals !== false && (
+                <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "14px", borderTop: `1px solid ${C.border}`, fontSize: "0.88rem", fontWeight: 700 }}>
+                  <span style={{ color: C.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subtotal {comData?.distribucion?.plantaBaja?.label || "Planta Baja"}</span>
+                  <span style={{ color: C.gold }}>{comData?.distribucion?.plantaBaja?.subtotal || "207.28 m²"}</span>
+                </div>
+              )}
             </div>
 
             {/* Planta Alta */}
@@ -391,10 +393,12 @@ function BucarePlazaPage() {
                 ))}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "14px", borderTop: `1px solid ${C.border}`, fontSize: "0.88rem", fontWeight: 700 }}>
-                <span style={{ color: C.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subtotal {comData?.distribucion?.plantaAlta?.label || "Planta Alta"}</span>
-                <span style={{ color: C.gold }}>{comData?.distribucion?.plantaAlta?.subtotal || "174.40 m²"}</span>
-              </div>
+              {comData?.distribucion?.showSubtotals !== false && (
+                <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "14px", borderTop: `1px solid ${C.border}`, fontSize: "0.88rem", fontWeight: 700 }}>
+                  <span style={{ color: C.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>Subtotal {comData?.distribucion?.plantaAlta?.label || "Planta Alta"}</span>
+                  <span style={{ color: C.gold }}>{comData?.distribucion?.plantaAlta?.subtotal || "174.40 m²"}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -92,6 +92,7 @@ export interface SiteContentData {
     distribucion: {
       titulo: string;
       subtitulo: string;
+      showSubtotals?: boolean;
       statsGrid: Array<{ value: string; unit?: string; label: string }>;
       plantaBaja: {
         label: string;
@@ -246,6 +247,7 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
     distribucion: {
       titulo: "Planificación espacial\ninteligente y optimizada.",
       subtitulo: "02 Distribución de Áreas",
+      showSubtotals: true,
       statsGrid: [
         { value: "10",     label: "Locales Comerciales (5 PB / 5 PA)" },
         { value: "381.68", unit: "m²", label: "Área Útil Comercial" },
@@ -413,6 +415,7 @@ function mergeContent(prev: SiteContentData, json: any): SiteContentData {
         ? {
             titulo:    com.distribucion.titulo    || prev.comercial.distribucion.titulo,
             subtitulo: com.distribucion.subtitulo || prev.comercial.distribucion.subtitulo,
+            showSubtotals: com.distribucion.showSubtotals !== undefined ? com.distribucion.showSubtotals : (prev.comercial.distribucion.showSubtotals !== undefined ? prev.comercial.distribucion.showSubtotals : true),
             statsGrid: (com.distribucion.statsGrid && com.distribucion.statsGrid.length > 0)
               ? com.distribucion.statsGrid.map((st: any, idx: number) => ({
                   value: st.value || prev.comercial.distribucion.statsGrid[idx]?.value || "",

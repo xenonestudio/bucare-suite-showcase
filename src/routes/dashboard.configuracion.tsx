@@ -2083,6 +2083,36 @@ export function DashboardConfiguracion() {
                     </div>
                   </div>
 
+                  {/* Opciones de Visibilidad de Subtotales */}
+                  <div className="p-3 rounded-lg border flex items-center justify-between" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)" }}>
+                    <div>
+                      <span className="text-xs font-semibold block" style={{ color: "var(--dash-text)" }}>
+                        Mostrar Subtotales de Áreas
+                      </span>
+                      <span className="text-[11px]" style={{ color: "var(--dash-muted)" }}>
+                        Si se desmarca, se ocultarán las filas de "Subtotal Planta Baja" y "Subtotal Planta Alta" en la página pública /comercial.
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      id="showSubtotalsToggle"
+                      checked={siteForm.comercial?.distribucion?.showSubtotals !== false}
+                      onChange={(e) =>
+                        setSiteForm({
+                          ...siteForm,
+                          comercial: {
+                            ...siteForm.comercial,
+                            distribucion: {
+                              ...siteForm.comercial.distribucion,
+                              showSubtotals: e.target.checked,
+                            },
+                          },
+                        })
+                      }
+                      className="h-4 w-4 accent-emerald-500 cursor-pointer"
+                    />
+                  </div>
+
                   {/* Stats grid */}
                   <div>
                     <Label className="text-[10px] uppercase tracking-wider block mb-2" style={{ color: "var(--dash-muted)" }}>Métricas de resumen</Label>
