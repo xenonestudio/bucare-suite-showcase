@@ -4,7 +4,7 @@ import { useSiteContent } from "@/hooks/useSiteContent";
 import {
   MapPin, Phone, Mail, Instagram, Facebook, ArrowRight,
   ChevronDown, Menu, X, Building2, Users, Layers, Car,
-  Coffee, ShoppingBag, Scissors, Zap, Shield, Star
+  Coffee, ShoppingBag, Scissors, Zap, Shield, Star, Maximize2
 } from "lucide-react";
 
 export const Route = createFileRoute("/comercial")({
@@ -50,6 +50,7 @@ function BucarePlazaPage() {
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [projectVideoReady, setProjectVideoReady] = useState(false);
+  const [zoomModal, setZoomModal] = useState<{ open: boolean; src: string; title: string }>({ open: false, src: "", title: "" });
 
   const scrollTo = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -375,6 +376,48 @@ function BucarePlazaPage() {
                   <span style={{ color: C.gold }}>{comData?.distribucion?.plantaBaja?.subtotal || "207.28 m²"}</span>
                 </div>
               )}
+
+              {/* Plano Planta Baja */}
+              <div 
+                onClick={() => setZoomModal({ 
+                  open: true, 
+                  src: comData?.distribucion?.plantaBaja?.planoImg || "/comercial/plano_pb.jpg", 
+                  title: `Plano Arquitectónico — ${comData?.distribucion?.plantaBaja?.label || "Planta Baja"}` 
+                })}
+                style={{
+                  marginTop: "16px",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  border: "1px solid rgba(225,182,104,0.25)",
+                  background: "rgba(0,0,0,0.5)",
+                  position: "relative",
+                  cursor: "zoom-in"
+                }}
+                className="group"
+              >
+                <div style={{ position: "relative", aspectRatio: "16/9", overflow: "hidden" }}>
+                  <img 
+                    src={comData?.distribucion?.plantaBaja?.planoImg || "/comercial/plano_pb.jpg"} 
+                    alt="Plano Planta Baja" 
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.4s ease" }}
+                    className="group-hover:scale-105"
+                  />
+                  <div 
+                    style={{
+                      position: "absolute", inset: 0, background: "rgba(10,10,10,0.5)", opacity: 0,
+                      transition: "opacity 0.3s ease", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                      color: C.gold, fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em"
+                    }}
+                    className="group-hover:opacity-100"
+                  >
+                    <Maximize2 size={16} /> Ver Plano Completo
+                  </div>
+                </div>
+                <div style={{ padding: "12px 16px", background: "rgba(20,20,20,0.9)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: C.text }}>Plano Arquitectónico PB</span>
+                  <span style={{ fontSize: "0.68rem", color: C.gold, fontWeight: 600 }}>Clic para ampliar 🔍</span>
+                </div>
+              </div>
             </div>
 
             {/* Planta Alta */}
@@ -800,10 +843,43 @@ function BucarePlazaPage() {
           #contacto > div > div { grid-template-columns: 1fr !important; }
           footer > div > div:first-child { grid-template-columns: 1fr !important; }
           #galeria > div > div { grid-template-columns: 1fr !important; }
-        }
         ::-webkit-scrollbar { display: none; }
         * { -webkit-font-smoothing: antialiased; }
       `}</style>
+
+      {/* Modal Zoom Plano */}
+      {zoomModal.open && (
+        <div 
+          onClick={() => setZoomModal({ open: false, src: "", title: "" })}
+          style={{
+            position: "fixed", inset: 0, zIndex: 99999,
+            background: "rgba(0,0,0,0.92)", backdropFilter: "blur(10px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: "20px"
+          }}
+        >
+          <div 
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: "relative", maxWidth: "95vw", maxHeight: "90vh",
+              background: "#111", border: "1px solid rgba(225,182,104,0.3)", borderRadius: "16px",
+              overflow: "hidden", boxShadow: "0 25px 80px rgba(0,0,0,0.8)", display: "flex", flexDirection: "column"
+            }}
+          >
+            <div style={{ padding: "16px 24px", background: "#181818", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ color: C.gold, fontWeight: 800, fontSize: "0.9rem", fontFamily: "'Archivo', sans-serif" }}>{zoomModal.title}</span>
+              <button 
+                onClick={() => setZoomModal({ open: false, src: "", title: "" })}
+                style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: "50%", width: "32px", height: "32px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding: "16px", overflow: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img src={zoomModal.src} alt={zoomModal.title} style={{ maxWidth: "100%", maxHeight: "78vh", objectFit: "contain", borderRadius: "8px" }} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

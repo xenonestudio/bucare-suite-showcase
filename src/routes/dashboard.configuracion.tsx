@@ -2319,6 +2319,13 @@ export function DashboardConfiguracion() {
                         <Label className="text-[10px] uppercase tracking-wider" style={{ color: "var(--dash-muted)" }}>Subtotal</Label>
                         <Input value={siteForm.comercial?.distribucion?.plantaBaja?.subtotal || ""} onChange={(e) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaBaja: { ...siteForm.comercial.distribucion.plantaBaja, subtotal: e.target.value } } } })} className="h-7 text-xs font-bold" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-accent)" }} />
                       </div>
+                      <div className="pt-2">
+                        <ImageUploader
+                          label="Plano Arquitectónico (Planta Baja)"
+                          value={siteForm.comercial?.distribucion?.plantaBaja?.planoImg || "/comercial/plano_pb.jpg"}
+                          onChange={(url) => setSiteForm({ ...siteForm, comercial: { ...siteForm.comercial, distribucion: { ...siteForm.comercial.distribucion, plantaBaja: { ...siteForm.comercial.distribucion.plantaBaja, planoImg: url } } } })}
+                        />
+                      </div>
                     </div>
 
                     {/* Planta Alta */}

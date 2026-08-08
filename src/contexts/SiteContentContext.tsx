@@ -101,6 +101,7 @@ export interface SiteContentData {
         rangLabel: string;
         items: Array<{ name: string; area: string }>;
         subtotal: string;
+        planoImg?: string;
       };
       plantaAlta: {
         label: string;
@@ -275,10 +276,11 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
           { name: "Local 3", area: "20.71 m²" },
           { name: "Local 4", area: "20.71 m²" },
           { name: "Local 5", area: "43.23 m²" },
-          { name: "Área de Mesas Techada", area: "52.85 m²" },
-          { name: "Módulo de Servicios", area: "9.98 m²" },
+          { name: "Local 4", area: "57.37 m²" },
+          { name: "Local 5", area: "69.40 m²" },
         ],
         subtotal: "207.28 m²",
+        planoImg: "/comercial/plano_pb.jpg",
       },
       plantaAlta: {
         label: "Planta Alta",
@@ -450,6 +452,7 @@ function mergeContent(prev: SiteContentData, json: any): SiteContentData {
                   }))
                 : prev.comercial.distribucion.plantaBaja.items,
               subtotal: com.distribucion.plantaBaja?.subtotal || prev.comercial.distribucion.plantaBaja.subtotal,
+              planoImg: com.distribucion.plantaBaja?.planoImg || prev.comercial.distribucion.plantaBaja.planoImg || "/comercial/plano_pb.jpg",
             },
             plantaAlta: {
               label:     com.distribucion.plantaAlta?.label     || prev.comercial.distribucion.plantaAlta.label,
