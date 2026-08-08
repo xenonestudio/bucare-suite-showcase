@@ -34,6 +34,7 @@ export interface SiteContentData {
       balcony: string;
       parking?: string;
       distribution: string[];
+      specs?: Array<{ label: string; value: string }>;
       plan: string;
       render: string;
       gallery?: string[];
@@ -148,6 +149,7 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
     models: [
       {
         id: "01", name: "MODELO 01", area: "31.60 m²", bedrooms: "1 hab.", bathrooms: "1 baño", balcony: "Jardinera / Balcón frontal", parking: "1 puesto de estacionamiento",
+        specs: [{label:"Área",value:"31.60 m²"},{label:"Estacionamiento",value:"1 puesto"},{label:"Habitaciones",value:"1 hab."},{label:"Baños",value:"1 baño"},{label:"Balcón",value:"Jardinera / Balcón frontal"}],
         distribution: ["Acceso / Ingreso central.", "Baño completo accesible cerca de la entrada.", "Área integradora de comedor y cocina lineal.", "Habitación principal integrada con vista y salida hacia el balcón/jardinera."],
         plan: "/modelos/mapa_modelo01.jpg", render: "/modelos/Imagen_modelo01.jpg",
         gallery: ["/modelos/Imagen_modelo01.jpg", "/modelos/mapa_modelo01.jpg", "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=800&auto=format&fit=crop&q=80"],
@@ -155,6 +157,7 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
       },
       {
         id: "02", name: "MODELO 02", area: "45.03 m²", bedrooms: "1 hab.", bathrooms: "1 baño", balcony: "Balcón / Área verde frontal", parking: "1 puesto de estacionamiento",
+        specs: [{label:"Área",value:"45.03 m²"},{label:"Estacionamiento",value:"1 puesto"},{label:"Habitaciones",value:"1 hab."},{label:"Baños",value:"1 baño"},{label:"Balcón",value:"Balcón / Área verde frontal"}],
         distribution: ["Acceso / Ingreso con área de recibidor.", "Baño completo.", "Cocina en L / Comedor auxiliar circular.", "Zona de trabajo o escritorio.", "Habitación espaciosa con salida a balcón con jardines."],
         plan: "/modelos/mapa_modelo02.jpg", render: "/modelos/Imagen_modelo02.jpg",
         gallery: ["/modelos/Imagen_modelo02.jpg", "/modelos/mapa_modelo02.jpg", "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=800&auto=format&fit=crop&q=80"],
@@ -162,6 +165,7 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
       },
       {
         id: "03", name: "MODELO 03", area: "56.70 m²", bedrooms: "2 hab.", bathrooms: "2 baños", balcony: "Balcón", parking: "1 puesto de estacionamiento",
+        specs: [{label:"Área",value:"56.70 m²"},{label:"Estacionamiento",value:"1 puesto"},{label:"Habitaciones",value:"2 hab."},{label:"Baños",value:"2 baños"},{label:"Balcón",value:"Balcón"}],
         distribution: ["Ingreso a la zona social (sala de estar).", "Cocina abierta integrada con barra/comedor.", "2 habitaciones (habitación principal con baño privado y habitación secundaria).", "2 baños completos.", "Balcón continuo en la fachada posterior/lateral."],
         plan: "/modelos/mapa_modelo03.jpg", render: "/modelos/Imagen_modelo03.jpg",
         gallery: ["/modelos/Imagen_modelo03.jpg", "/modelos/mapa_modelo03.jpg", "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1617806118233-18e1db207faf?w=800&auto=format&fit=crop&q=80"],
@@ -169,6 +173,7 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
       },
       {
         id: "04", name: "MODELO 04", area: "63.23 m²", bedrooms: "2 hab.", bathrooms: "2 baños", balcony: "Balcón", parking: "1 puesto de estacionamiento",
+        specs: [{label:"Área",value:"63.23 m²"},{label:"Estacionamiento",value:"1 puesto"},{label:"Habitaciones",value:"2 hab."},{label:"Baños",value:"2 baños"},{label:"Balcón",value:"Balcón"}],
         distribution: ["Ingreso con recibidor.", "Cocina amplia integrada a comedor central.", "Sala de estar acogedora.", "Habitación principal de gran tamaño y habitación secundaria.", "2 baños completos.", "Balcón."],
         plan: "/modelos/mapa_modelo04.jpg", render: "/modelos/Imagen_modelo04.jpg",
         gallery: ["/modelos/Imagen_modelo04.jpg", "/modelos/mapa_modelo04.jpg", "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?w=800&auto=format&fit=crop&q=80"],
@@ -176,6 +181,7 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
       },
       {
         id: "05", name: "MODELO 05", area: "73.88 m²", bedrooms: "2 hab.", bathrooms: "2 baños", balcony: "Balcones amplios", parking: "1 puesto de estacionamiento",
+        specs: [{label:"Área",value:"73.88 m²"},{label:"Estacionamiento",value:"1 puesto"},{label:"Habitaciones",value:"2 hab."},{label:"Baños",value:"2 baños"},{label:"Balcón",value:"Balcones amplios"}],
         distribution: ["Acceso con área de cocina en isla / barra desayunadora y área de servicios.", "Sala de estar amplia con salida directa a amplio balcón con vegetación.", "2 habitaciones de excelente tamaño.", "2 baños completos.", "Balcones extensos con jardineras."],
         plan: "/modelos/mapa_modelo05.jpg", render: "/modelos/Imagen_modelo05.jpg",
         gallery: ["/modelos/Imagen_modelo05.jpg", "/modelos/mapa_modelo05.jpg", "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=800&auto=format&fit=crop&q=80"],
@@ -183,6 +189,7 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
       },
       {
         id: "06", name: "MODELO 06", area: "86.91 m²", bedrooms: "3 hab.", bathrooms: "2 baños", balcony: "Balcones", parking: "2 puestos de estacionamiento",
+        specs: [{label:"Área",value:"86.91 m²"},{label:"Estacionamiento",value:"2 puestos"},{label:"Habitaciones",value:"3 hab."},{label:"Baños",value:"2 baños"},{label:"Balcón",value:"Balcones"}],
         distribution: ["Es el modelo de mayor área del edificio.", "Acceso/Ingreso directo a área social con sala y amplio comedor.", "Cocina moderna en L integrando la zona social.", "3 habitaciones (habitación principal con baño suite y 2 habitaciones secundarias/estudio).", "2 baños completos.", "Múltiples balcón/jardineras que bordean los espacios principales."],
         plan: "/modelos/mapa_modelo06.jpg", render: "/modelos/Imagen_modelo06.jpg",
         gallery: ["/modelos/Imagen_modelo06.jpg", "/modelos/mapa_modelo06.jpg", "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&auto=format&fit=crop&q=80"],
@@ -359,6 +366,7 @@ function mergeContent(prev: SiteContentData, json: any): SiteContentData {
             gallery: mod.gallery && Array.isArray(mod.gallery) && mod.gallery.length > 0
               ? mod.gallery
               : prev.apartamentos.models[idx]?.gallery || [mod.render, mod.plan].filter(Boolean),
+            specs: mod.specs && mod.specs.length > 0 ? mod.specs : prev.apartamentos.models[idx]?.specs,
             financingTotal: mod.financingTotal !== undefined ? mod.financingTotal : prev.apartamentos.models[idx]?.financingTotal,
             financingInicial: mod.financingInicial !== undefined ? mod.financingInicial : prev.apartamentos.models[idx]?.financingInicial,
             financingCuotasMonto: mod.financingCuotasMonto !== undefined ? mod.financingCuotasMonto : prev.apartamentos.models[idx]?.financingCuotasMonto,

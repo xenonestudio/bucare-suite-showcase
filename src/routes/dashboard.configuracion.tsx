@@ -997,62 +997,89 @@ export function DashboardConfiguracion() {
                             <span className="text-[11px] text-muted-foreground">{mod.bedrooms} · {mod.bathrooms}</span>
                           </div>
 
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div>
-                              <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Área</Label>
-                              <Input
-                                value={mod.area}
-                                onChange={(e) => {
+                          {/* Tipología — specs drag & drop */}
+                          <div className="pt-2 border-t border-white/5 space-y-2">
+                            <Label className="text-[11px] font-bold" style={{ color: "var(--dash-accent)" }}>
+                              Tipología <span className="font-normal opacity-50 ml-1">(arrastra ⠿ para reordenar)</span>
+                            </Label>
+                            <div className="space-y-1.5">
+                              {(mod.specs || []).map((spec: { label: string; value: string }, sIdx: number) => (
+                                <div
+                                  key={sIdx}
+                                  draggable
+                                  onDragStart={(e) => e.dataTransfer.setData("text/plain", `s:${idx}:${sIdx}`)}
+                                  onDragOver={(e) => e.preventDefault()}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    const raw = e.dataTransfer.getData("text/plain");
+                                    if (!raw.startsWith("s:")) return;
+                                    const [, srcModIdx, srcSIdx] = raw.split(":").map(Number);
+                                    if (srcModIdx !== idx || srcSIdx === sIdx) return;
+                                    const newMods = [...siteForm.apartamentos.models];
+                                    const specs = [...(newMods[idx].specs || [])];
+                                    const [removed] = specs.splice(srcSIdx, 1);
+                                    specs.splice(sIdx, 0, removed);
+                                    newMods[idx] = { ...newMods[idx], specs };
+                                    setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                  }}
+                                  className="flex gap-1.5 items-center"
+                                  style={{ cursor: "grab" }}
+                                >
+                                  <span className="text-sm shrink-0 select-none" style={{ color: "var(--dash-muted)", cursor: "grab" }}>⠿</span>
+                                  <Input
+                                    draggable={false}
+                                    value={spec.label}
+                                    onChange={(e) => {
+                                      const newMods = [...siteForm.apartamentos.models];
+                                      const specs = [...(newMods[idx].specs || [])];
+                                      specs[sIdx] = { ...specs[sIdx], label: e.target.value };
+                                      newMods[idx] = { ...newMods[idx], specs };
+                                      setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                    }}
+                                    placeholder="Etiqueta"
+                                    className="text-xs w-28 h-7"
+                                    style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                                  />
+                                  <Input
+                                    draggable={false}
+                                    value={spec.value}
+                                    onChange={(e) => {
+                                      const newMods = [...siteForm.apartamentos.models];
+                                      const specs = [...(newMods[idx].specs || [])];
+                                      specs[sIdx] = { ...specs[sIdx], value: e.target.value };
+                                      newMods[idx] = { ...newMods[idx], specs };
+                                      setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                    }}
+                                    placeholder="Valor"
+                                    className="text-xs flex-1 h-7"
+                                    style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const newMods = [...siteForm.apartamentos.models];
+                                      const specs = (newMods[idx].specs || []).filter((_: any, i: number) => i !== sIdx);
+                                      newMods[idx] = { ...newMods[idx], specs };
+                                      setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
+                                    }}
+                                    className="text-xs px-1.5 py-1 rounded shrink-0"
+                                    style={{ background: "rgba(239,68,68,0.15)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)" }}
+                                  >✕</button>
+                                </div>
+                              ))}
+                              <button
+                                onClick={() => {
                                   const newMods = [...siteForm.apartamentos.models];
-                                  newMods[idx].area = e.target.value;
+                                  const specs = [...(newMods[idx].specs || []), { label: "", value: "" }];
+                                  newMods[idx] = { ...newMods[idx], specs };
                                   setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
                                 }}
-                                className="mt-0.5 text-xs"
-                                style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Estacionamiento</Label>
-                              <Input
-                                value={mod.parking || ""}
-                                onChange={(e) => {
-                                  const newMods = [...siteForm.apartamentos.models];
-                                  newMods[idx].parking = e.target.value;
-                                  setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
-                                }}
-                                className="mt-0.5 text-xs"
-                                style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Habitaciones</Label>
-                              <Input
-                                value={mod.bedrooms}
-                                onChange={(e) => {
-                                  const newMods = [...siteForm.apartamentos.models];
-                                  newMods[idx].bedrooms = e.target.value;
-                                  setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
-                                }}
-                                className="mt-0.5 text-xs"
-                                style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Baños</Label>
-                              <Input
-                                value={mod.bathrooms}
-                                onChange={(e) => {
-                                  const newMods = [...siteForm.apartamentos.models];
-                                  newMods[idx].bathrooms = e.target.value;
-                                  setSiteForm({ ...siteForm, apartamentos: { ...siteForm.apartamentos, models: newMods } });
-                                }}
-                                className="mt-0.5 text-xs"
-                                style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}
-                              />
+                                className="text-[10px] px-2.5 py-1 rounded"
+                                style={{ background: "rgba(225,182,104,0.1)", color: "var(--dash-accent)", border: "1px solid rgba(225,182,104,0.3)" }}
+                              >+ Agregar característica</button>
                             </div>
                           </div>
 
-                          {/* Balcón */}
+
                           <div>
                             <Label className="text-[10px]" style={{ color: "var(--dash-muted)" }}>Balcón / Terraza</Label>
                             <Input

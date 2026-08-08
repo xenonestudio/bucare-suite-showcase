@@ -298,28 +298,41 @@ function Apartamentos() {
                 </div>
               </div>
 
-              <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-5 gap-4 bg-muted/30 p-4 rounded-md border border-border/50">
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Área</div>
-                  <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{active.area}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Estacionamiento</div>
-                  <div className="text-xs sm:text-sm mt-0.5 text-primary font-semibold">{active.parking || (active.id === "06" ? "2 puestos" : "1 puesto")}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Habitaciones</div>
-                  <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{active.bedrooms}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Baños</div>
-                  <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{active.bathrooms}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Balcón</div>
-                  <div className="text-xs sm:text-sm mt-0.5 text-primary font-semibold">{active.balcony}</div>
-                </div>
+              <div className={`md:col-span-8 grid grid-cols-2 sm:grid-cols-${Math.min(active.specs?.length || 5, 6)} gap-4 bg-muted/30 p-4 rounded-md border border-border/50`}>
+                {active.specs && active.specs.length > 0
+                  ? active.specs.map((spec, i) => (
+                      <div key={i}>
+                        <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">{spec.label}</div>
+                        <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{spec.value}</div>
+                      </div>
+                    ))
+                  : (
+                    <>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Área</div>
+                        <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{active.area}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Estacionamiento</div>
+                        <div className="text-xs sm:text-sm mt-0.5 text-primary font-semibold">{active.parking || (active.id === "06" ? "2 puestos" : "1 puesto")}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Habitaciones</div>
+                        <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{active.bedrooms}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Baños</div>
+                        <div className="text-display text-lg sm:text-xl mt-0.5 text-primary font-bold">{active.bathrooms}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-semibold">Balcón</div>
+                        <div className="text-xs sm:text-sm mt-0.5 text-primary font-semibold">{active.balcony}</div>
+                      </div>
+                    </>
+                  )
+                }
               </div>
+
 
               <div className="md:col-span-12 mt-4">
                 <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3 font-semibold">
