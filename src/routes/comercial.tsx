@@ -349,9 +349,9 @@ function BucarePlazaPage() {
           </div>
 
           {/* Levels grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "48px", alignItems: "start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "48px", alignItems: "stretch" }}>
             {/* Planta Baja */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", height: "100%" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderBottom: `1px solid ${C.gold}`, paddingBottom: "12px" }}>
                 <h3 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: "1.25rem", color: C.text, margin: 0 }}>
                   {comData?.distribucion?.plantaBaja?.label || "Planta Baja"}
@@ -385,7 +385,8 @@ function BucarePlazaPage() {
                   title: `Plano Arquitectónico — ${comData?.distribucion?.plantaBaja?.label || "Planta Baja"}` 
                 })}
                 style={{
-                  marginTop: "16px",
+                  marginTop: "auto",
+                  paddingTop: "16px",
                   borderRadius: "16px",
                   overflow: "hidden",
                   border: "1px solid rgba(225,182,104,0.25)",
@@ -421,7 +422,7 @@ function BucarePlazaPage() {
             </div>
 
             {/* Planta Alta */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px", height: "100%" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderBottom: `1px solid ${C.gold}`, paddingBottom: "12px" }}>
                 <h3 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: "1.25rem", color: C.text, margin: 0 }}>
                   {comData?.distribucion?.plantaAlta?.label || "Planta Alta"}
@@ -455,7 +456,8 @@ function BucarePlazaPage() {
                   title: `Plano Arquitectónico — ${comData?.distribucion?.plantaAlta?.label || "Planta Alta"}` 
                 })}
                 style={{
-                  marginTop: "16px",
+                  marginTop: "auto",
+                  paddingTop: "16px",
                   borderRadius: "16px",
                   overflow: "hidden",
                   border: "1px solid rgba(225,182,104,0.25)",
