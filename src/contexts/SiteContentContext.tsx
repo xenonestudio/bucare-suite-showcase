@@ -108,6 +108,7 @@ export interface SiteContentData {
         rangLabel: string;
         items: Array<{ name: string; area: string }>;
         subtotal: string;
+        planoImg?: string;
       };
     };
     socials?: {
@@ -293,6 +294,7 @@ export const DEFAULT_SITE_CONTENT: SiteContentData = {
           { name: "Local 10", area: "64.36 m²" },
         ],
         subtotal: "174.40 m²",
+        planoImg: "/comercial/plano_pa.jpg",
       },
     },
     socials: {
@@ -464,6 +466,7 @@ function mergeContent(prev: SiteContentData, json: any): SiteContentData {
                   }))
                 : prev.comercial.distribucion.plantaAlta.items,
               subtotal: com.distribucion.plantaAlta?.subtotal || prev.comercial.distribucion.plantaAlta.subtotal,
+              planoImg: com.distribucion.plantaAlta?.planoImg || prev.comercial.distribucion.plantaAlta.planoImg || "/comercial/plano_pa.jpg",
             },
           }
         : prev.comercial.distribucion,

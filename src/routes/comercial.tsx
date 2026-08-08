@@ -446,6 +446,48 @@ function BucarePlazaPage() {
                   <span style={{ color: C.gold }}>{comData?.distribucion?.plantaAlta?.subtotal || "174.40 m²"}</span>
                 </div>
               )}
+
+              {/* Plano Planta Alta */}
+              <div 
+                onClick={() => setZoomModal({ 
+                  open: true, 
+                  src: comData?.distribucion?.plantaAlta?.planoImg || "/comercial/plano_pa.jpg", 
+                  title: `Plano Arquitectónico — ${comData?.distribucion?.plantaAlta?.label || "Planta Alta"}` 
+                })}
+                style={{
+                  marginTop: "16px",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  border: "1px solid rgba(225,182,104,0.25)",
+                  background: "rgba(0,0,0,0.5)",
+                  position: "relative",
+                  cursor: "zoom-in"
+                }}
+                className="group"
+              >
+                <div style={{ position: "relative", aspectRatio: "16/9", overflow: "hidden" }}>
+                  <img 
+                    src={comData?.distribucion?.plantaAlta?.planoImg || "/comercial/plano_pa.jpg"} 
+                    alt="Plano Planta Alta" 
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.4s ease" }}
+                    className="group-hover:scale-105"
+                  />
+                  <div 
+                    style={{
+                      position: "absolute", inset: 0, background: "rgba(10,10,10,0.5)", opacity: 0,
+                      transition: "opacity 0.3s ease", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                      color: C.gold, fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em"
+                    }}
+                    className="group-hover:opacity-100"
+                  >
+                    <Maximize2 size={16} /> Ver Plano Completo
+                  </div>
+                </div>
+                <div style={{ padding: "12px 16px", background: "rgba(20,20,20,0.9)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: C.text }}>Plano Arquitectónico PA</span>
+                  <span style={{ fontSize: "0.68rem", color: C.gold, fontWeight: 600 }}>Clic para ampliar 🔍</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
