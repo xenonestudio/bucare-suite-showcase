@@ -4,6 +4,7 @@ import { Plus, Loader2, AlertCircle, CalendarDays, Building2, Trash2, Clock, Ref
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/dashboard/citas")({
   component: DashboardCitas,
@@ -12,19 +13,31 @@ export const Route = createFileRoute("/dashboard/citas")({
 interface Cita {
   id: string;
   clienteId: string;
+  cliente?: {
+    id: string;
+    fullName?: string;
+    email: string;
+    phoneNumber?: string;
+  };
   fecha: string;
   tipoPropiedad: string;
   estado: string;
   notas?: string;
 }
 
-const API_BASE = "/api/v1";
+import { API_URL } from "@/lib/api";
+const API_BASE = API_URL;
 
 function DashboardCitas() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
+
+  const toggleExpandNote = (id: string) => {
+    setExpandedNotes((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -126,9 +139,83 @@ function DashboardCitas() {
 
       <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] rounded-xl shadow-2xl overflow-hidden">
         {loading && citas.length === 0 ? (
-          <div className="p-16 flex justify-center"><Loader2 className="animate-spin text-[#E1B668]" /></div>
+          isMobile ? (
+            <div className="flex flex-col p-4 gap-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex flex-col gap-3 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2 w-1/2">
+                      <Skeleton className="h-4 w-full bg-white/5 animate-pulse" />
+                      <Skeleton className="h-3.5 w-2/3 bg-white/5 animate-pulse" />
+                    </div>
+                    <Skeleton className="h-5 w-16 bg-white/5 rounded-full animate-pulse" />
+                  </div>
+                  <Skeleton className="h-5 w-28 bg-white/5 animate-pulse" />
+                  <Skeleton className="h-10 w-full bg-white/5 rounded-lg animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-[rgba(0,0,0,0.2)] text-[11px] uppercase tracking-wider text-gray-400 border-b border-[rgba(255,255,255,0.08)]">
+                  <tr>
+                    <th className="py-4 px-6 font-semibold">Cliente</th>
+                    <th className="py-4 px-6 font-semibold">Fecha &amp; Hora</th>
+                    <th className="py-4 px-6 font-semibold">Propiedad</th>
+                    <th className="py-4 px-6 font-semibold">Detalles / Notas</th>
+                    <th className="py-4 px-6 font-semibold">Estado</th>
+                    <th className="py-4 px-6 font-semibold text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[rgba(255,255,255,0.04)]">
+                  {[1, 2, 3, 4].map(i => (
+                    <tr key={i}>
+                      <td className="py-4 px-6">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32 bg-white/5 animate-pulse" />
+                          <Skeleton className="h-3 w-40 bg-white/5 animate-pulse" />
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-28 bg-white/5 animate-pulse" />
+                          <Skeleton className="h-3 w-16 bg-white/5 animate-pulse" />
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <Skeleton className="h-5 w-24 bg-white/5 rounded-full animate-pulse" />
+                      </td>
+                      <td className="py-4 px-6">
+                        <Skeleton className="h-8 w-48 bg-white/5 rounded animate-pulse" />
+                      </td>
+                      <td className="py-4 px-6">
+                        <Skeleton className="h-5 w-16 bg-white/5 rounded-full animate-pulse" />
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <Skeleton className="h-8 w-16 ml-auto bg-white/5 animate-pulse" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         ) : error ? (
-          <div className="p-16 text-center text-[#e05555] bg-[rgba(224,85,85,0.05)] border border-[#e05555]/20 m-4 rounded-xl">{error}</div>
+          <div className="p-12 text-center flex flex-col items-center justify-center gap-4 m-4 rounded-xl bg-[rgba(224,85,85,0.05)] border border-[#e05555]/20">
+            <AlertCircle className="w-8 h-8 text-[#e05555]/80" />
+            <div>
+              <p className="text-sm font-semibold text-[#F0EDE8]">Error de conexión</p>
+              <p className="text-xs text-gray-400 mt-1">{error}</p>
+            </div>
+            <Button
+              size="sm"
+              onClick={fetchCitas}
+              className="bg-[#e05555] hover:bg-[#e05555]/90 text-white font-semibold text-xs tracking-wider"
+            >
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Reintentar
+            </Button>
+          </div>
         ) : citas.length === 0 ? (
           <div className="p-16 flex flex-col items-center justify-center text-gray-400">
             <div className="bg-[rgba(255,255,255,0.03)] p-4 rounded-full mb-4 border border-[rgba(255,255,255,0.05)]">
@@ -185,9 +272,38 @@ function DashboardCitas() {
                     </Badge>
                   </div>
 
-                  <div className="text-xs text-gray-300 whitespace-pre-line leading-relaxed bg-[rgba(0,0,0,0.2)] p-3 rounded-lg border border-[rgba(255,255,255,0.04)] font-sans mt-1">
-                    {cita.notas || "Sin observaciones adicionales"}
-                  </div>
+                  {cita.cliente && (
+                    <div className="flex flex-col gap-0.5 text-xs bg-[rgba(255,255,255,0.01)] border border-[rgba(255,255,255,0.03)] p-2.5 rounded-lg mt-1">
+                      <div className="flex items-center gap-1.5 font-medium text-[#F0EDE8]">
+                        <Users className="w-3.5 h-3.5 text-[#E1B668]" />
+                        <span>{cita.cliente.fullName || "Cliente sin nombre"}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-400 pl-5">
+                        {cita.cliente.email} {cita.cliente.phoneNumber ? ` | ${cita.cliente.phoneNumber}` : ""}
+                      </div>
+                    </div>
+                  )}
+
+                  {(() => {
+                    const isExpanded = !!expandedNotes[cita.id];
+                    const needsTruncation = cita.notas && cita.notas.length > 80;
+                    const displayedText = (needsTruncation && !isExpanded)
+                      ? `${cita.notas.substring(0, 80)}...`
+                      : (cita.notas || "Sin observaciones adicionales");
+                    return (
+                      <div className="text-xs text-gray-300 whitespace-pre-line leading-relaxed bg-[rgba(0,0,0,0.2)] p-3 rounded-lg border border-[rgba(255,255,255,0.04)] font-sans mt-1">
+                        {displayedText}
+                        {needsTruncation && (
+                          <button
+                            onClick={() => toggleExpandNote(cita.id)}
+                            className="text-[#E1B668] hover:text-[#E1B668]/80 text-[10px] font-semibold mt-1.5 uppercase tracking-wider block focus:outline-none"
+                          >
+                            {isExpanded ? "Ver menos" : "Ver más"}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
                   
                   <div className="flex justify-end mt-2 pt-3 border-t border-[rgba(255,255,255,0.06)]">
                      <Button
@@ -208,6 +324,7 @@ function DashboardCitas() {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-[rgba(0,0,0,0.2)] text-[11px] uppercase tracking-wider text-gray-400 border-b border-[rgba(255,255,255,0.08)]">
                 <tr>
+                  <th className="py-4 px-6 font-semibold">Cliente</th>
                   <th className="py-4 px-6 font-semibold">Fecha &amp; Hora</th>
                   <th className="py-4 px-6 font-semibold">Propiedad</th>
                   <th className="py-4 px-6 font-semibold">Detalles / Notas</th>
@@ -231,6 +348,27 @@ function DashboardCitas() {
 
                   return (
                     <tr key={cita.id} className="hover:bg-[rgba(255,255,255,0.02)] transition-colors">
+                      <td className="py-4 px-6">
+                        {cita.cliente ? (
+                          <div className="flex flex-col">
+                            <div className="font-medium text-[#F0EDE8] flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5 text-[#E1B668]" />
+                              <span>{cita.cliente.fullName || "Cliente sin nombre"}</span>
+                            </div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              {cita.cliente.email}
+                            </div>
+                            {cita.cliente.phoneNumber && (
+                              <div className="text-[10px] text-gray-500 mt-0.5">
+                                {cita.cliente.phoneNumber}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-500">Sin información</span>
+                        )}
+                      </td>
+
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2 font-medium text-[#F0EDE8]">
                           <CalendarDays className="w-4 h-4 text-[#E1B668]" />
@@ -257,9 +395,26 @@ function DashboardCitas() {
                       </td>
 
                       <td className="py-4 px-6 max-w-sm whitespace-normal">
-                        <div className="text-xs text-gray-300 whitespace-pre-line leading-relaxed bg-[rgba(0,0,0,0.2)] p-2.5 rounded-lg border border-[rgba(255,255,255,0.04)] font-sans">
-                          {cita.notas || "Sin observaciones adicionales"}
-                        </div>
+                        {(() => {
+                          const isExpanded = !!expandedNotes[cita.id];
+                          const needsTruncation = cita.notas && cita.notas.length > 80;
+                          const displayedText = (needsTruncation && !isExpanded)
+                            ? `${cita.notas.substring(0, 80)}...`
+                            : (cita.notas || "Sin observaciones adicionales");
+                          return (
+                            <div className="text-xs text-gray-300 whitespace-pre-line leading-relaxed bg-[rgba(0,0,0,0.2)] p-2.5 rounded-lg border border-[rgba(255,255,255,0.04)] font-sans">
+                              {displayedText}
+                              {needsTruncation && (
+                                <button
+                                  onClick={() => toggleExpandNote(cita.id)}
+                                  className="text-[#E1B668] hover:text-[#E1B668]/80 text-[10px] font-semibold mt-1.5 uppercase tracking-wider block focus:outline-none"
+                                >
+                                  {isExpanded ? "Ver menos" : "Ver más"}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       <td className="py-4 px-6">

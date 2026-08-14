@@ -21,6 +21,15 @@ export default defineConfig({
   } as any,
   vite: {
     build: {
+      minify: "terser",
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+        },
+      },
+      sourcemap: false,
+      chunkSizeWarningLimit: 800,
       rollupOptions: {
         output: {
           manualChunks(id) {
@@ -31,8 +40,14 @@ export default defineConfig({
               if (id.includes("@tanstack")) {
                 return "vendor-tanstack";
               }
-              if (id.includes("lucide-react") || id.includes("recharts") || id.includes("@radix-ui")) {
-                return "vendor-ui-libs";
+              if (id.includes("recharts")) {
+                return "vendor-charts";
+              }
+              if (id.includes("lucide-react")) {
+                return "vendor-icons";
+              }
+              if (id.includes("@radix-ui")) {
+                return "vendor-radix";
               }
               return "vendor";
             }

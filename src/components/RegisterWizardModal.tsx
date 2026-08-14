@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { X, ArrowRight, ArrowLeft, CheckCircle2, User, Mail, Phone, Lock, Calendar, Sparkles } from "lucide-react";
+import { X, ArrowRight, ArrowLeft, CheckCircle2, User, Mail, Phone, Lock, Calendar, Sparkles, Loader2 } from "lucide-react";
+import { getApiUrl } from "@/lib/api";
 
 interface RegisterWizardModalProps {
   isOpen: boolean;
@@ -71,26 +72,27 @@ export const RegisterWizardModal: React.FC<RegisterWizardModalProps> = ({
     setLoading(true);
 
     try {
-      // 1. Crear cuenta
-      const regRes = await fetch("/api/v1/auth/register", {
+      // 1. Registrar usuario
+      const regRes = await fetch(getApiUrl("/api/v1/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName: formData.fullName.trim(),
-          email: formData.email.trim(),
+          fullName: formData.fullName,
+          email: formData.email,
           password: formData.password,
-          phoneNumber: formData.phoneNumber.trim() || undefined,
-          birthDate: formData.birthDate || undefined,
+          phoneNumber: formData.phoneNumber,
+          birthDate: formData.birthDate,
         }),
       });
 
-      const regData = await regRes.json();
+      const regJson = await regRes.json();
+
       if (!regRes.ok) {
-        throw new Error(regData.message || "Error al crear la cuenta.");
+        throw new Error(regJson.message || "Error al crear cuenta.");
       }
 
-      // 2. Autenticar inmediatamente (Login)
-      const loginRes = await fetch("/api/v1/auth/login", {
+      // 2. Auto-login
+      const loginRes = await fetch(getApiUrl("/api/v1/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

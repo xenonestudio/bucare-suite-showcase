@@ -28,9 +28,25 @@ export class UsersService {
       passwordHash,
     });
 
+    // ── Notificación Push al equipo por registro de cliente ──
+    if (user.role === 'CLIENTE') {
+      try {
+        const { sendEventNotification } = await import('../notifications/notifications.routes.js');
+        sendEventNotification(
+          'client.created',
+          'Nuevo Cliente Registrado 👤',
+          `${user.fullName || user.email} se ha unido a Bucare Suite.`,
+          '/dashboard/clientes'
+        ).catch(e => console.error('[UsersService] Error enviando push client.created:', e));
+      } catch (err) {
+        console.error('[UsersService] Failed to import sendEventNotification:', err);
+      }
+    }
+
     const { passwordHash: _, ...userPublic } = user;
     return userPublic;
   }
+
 
   /**
    * Obtiene un usuario por su ID único.

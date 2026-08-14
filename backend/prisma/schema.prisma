@@ -2,7 +2,9 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  output        = "../src/generated/client"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "rhel-openssl-1.1.x", "rhel-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -29,6 +31,10 @@ model User {
   deletedAt     DateTime? 
   
   chatSessions  ChatSession[]
+  citas         Cita[]
+  notificationSubscriptions NotificationSubscription[]
+  notifications             Notification[]
+  visitors                  Visitor[]
 
   @@map("users")
 }
@@ -43,20 +49,28 @@ model AuditLog {
   ipAddress   String?
   createdAt   DateTime @default(now())
   
+  @@index([userId])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
 model Cita {
   id              String   @id @default(uuid())
   clienteId       String
+  cliente         User     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   fecha           DateTime
   tipoPropiedad   String   // "APARTAMENTO" o "LOCAL"
   estado          String   @default("PROGRAMADA") // PROGRAMADA, COMPLETADA, CANCELADA
   notas           String?
+  sentReminder24h Boolean  @default(false)
+  sentReminderTime Boolean @default(false)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  @@index([clienteId])
+  @@index([fecha])
+  @@index([estado])
   @@map("citas")
 }
 
@@ -72,6 +86,8 @@ model ChatSession {
   updatedAt   DateTime      @updatedAt
   messages    ChatMessage[]
 
+  @@index([userId])
+  @@index([project])
   @@map("chat_sessions")
 }
 
@@ -83,6 +99,8 @@ model ChatMessage {
   content     String
   createdAt   DateTime    @default(now())
 
+  @@index([sessionId])
+  @@index([createdAt])
   @@map("chat_messages")
 }
 
@@ -91,6 +109,7 @@ model AiConfig {
   project       String   @unique // "BUCARE_SUITE" | "BUCARE_PLAZA"
   systemPrompt  String
   selectedModel String?  @default("gemini-2.0-flash")
+  autoRotateModel Boolean @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -106,4 +125,166 @@ model SiteContent {
 
   @@map("site_contents")
 }
+
+model Visit {
+  id        String   @id @default(uuid())
+  sessionId String
+  fecha     String   // Formato YYYY-MM-DD
+  createdAt DateTime @default(now())
+
+  @@unique([sessionId, fecha])
+  @@map("visits")
+}
+
+model NotificationSubscription {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint    String   @unique
+  keysAuth    String
+  keysP256dh  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("notification_subscriptions")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  url       String?  @default("/dashboard")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model NotificationSetting {
+  id          String   @id @default(uuid())
+  event       String   @unique // client.created, chat.message, cita.created, cita.reminder.24h, cita.time
+  enabled     Boolean  @default(true)
+  roles       String   // Roles asignados separados por coma (e.g. "SUPERADMIN,ADMIN,VENTAS")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("notification_settings")
+}
+
+
+model WhatsAppSession {
+  id             String            @id // El número de teléfono con código de país, ej. "584241111111"
+  phoneNumber    String            @unique
+  isActive       Boolean           @default(true)
+  connectedAt    DateTime          @default(now())
+  disconnectedAt DateTime?
+
+  @@map("whatsapp_sessions")
+}
+
+model WhatsAppContact {
+  id                String          @id @default(uuid())
+  phoneNumber       String          @unique // El número de teléfono del contacto (cliente)
+  name              String?
+  avatarUrl         String?         // URL de avatar/imagen
+  birthDate         DateTime?       // Fecha de nacimiento
+  email             String?         // Correo electrónico opcional
+  company           String?         // Compañía opcional
+  notes             String?         // Notas adicionales
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  chats             WhatsAppChat[]
+
+  @@map("whatsapp_contacts")
+}
+
+model WhatsAppChat {
+  id                String            @id @default(uuid())
+  contactId         String?
+  contact           WhatsAppContact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactPhone      String            @unique // El teléfono del cliente con el que se chatea
+  contactName       String?           // Nombre visible o asignado
+  lastMessage       String?
+  isAiActive        Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  messages          WhatsAppMessage[]
+
+  @@index([contactId])
+  @@map("whatsapp_chats")
+}
+
+model WhatsAppMessage {
+  id          String       @id @default(uuid())
+  chatId      String
+  chat        WhatsAppChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  externalId  String?      // ID del mensaje en la API externa (para evitar duplicados al sincronizar)
+  sender      String       // "USER" | "AI" | "ADMIN"
+  content     String
+  status      String       @default("SENT") // "SENT", "DELIVERED", "READ"
+  createdAt   DateTime     @default(now())
+
+  @@unique([chatId, externalId])
+  @@index([chatId])
+  @@index([createdAt])
+  @@map("whatsapp_messages")
+}
+
+model Visitor {
+  id              String           @id @default(uuid())
+  fingerprint     String           @unique
+  ip              String?
+  country         String?          @default("Unknown")
+  city            String?          @default("Unknown")
+  deviceType      String?          @default("desktop") // mobile, tablet, desktop
+  browser         String?
+  os              String?
+  isPwaInstalled  Boolean          @default(false)
+  pushEnabled     Boolean          @default(false)
+  userId          String?
+  user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  sessions        VisitorSession[]
+
+  @@map("visitors")
+}
+
+model VisitorSession {
+  id              String             @id @default(uuid())
+  visitorId       String
+  visitor         Visitor            @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  ipAddress       String?
+  startedAt       DateTime           @default(now())
+  lastActiveAt    DateTime           @default(now())
+  endedAt         DateTime?
+  durationSeconds Int                @default(0)
+  pageviews       VisitorPageview[]
+
+  @@index([visitorId])
+  @@map("visitor_sessions")
+}
+
+model VisitorPageview {
+  id              String         @id @default(uuid())
+  sessionId       String
+  session         VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  path            String
+  title           String?
+  durationMs      Int            @default(0)
+  createdAt       DateTime       @default(now())
+
+  @@index([sessionId])
+  @@map("visitor_pageviews")
+}
+
+
+
+
 

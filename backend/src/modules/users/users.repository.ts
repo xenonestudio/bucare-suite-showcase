@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../generated/client/index.js';
 import { prisma } from '../../config/database.config.js';
 import { IUser, ICreateUserDTO, IUpdateUserDTO, UserRole } from './users.types.js';
 

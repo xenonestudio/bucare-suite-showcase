@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /login
+Disallow: /registro
+Disallow: /api/
+
+Sitemap: https://bucaresuite.com/sitemap.xml

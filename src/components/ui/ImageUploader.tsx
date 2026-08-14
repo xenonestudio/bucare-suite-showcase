@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { UploadCloud, Loader2, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { getApiUrl } from "@/lib/api";
+
 interface ImageUploaderProps {
   value: string;
   onChange: (url: string) => void;
@@ -86,7 +88,7 @@ export function ImageUploader({ value, onChange, label }: ImageUploaderProps) {
       setUploadProgress(75);
       const token = localStorage.getItem("token");
 
-      const res = await fetch("/api/v1/upload", {
+      const res = await fetch(getApiUrl("/api/v1/upload"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

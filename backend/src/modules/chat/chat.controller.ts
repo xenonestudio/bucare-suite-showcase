@@ -31,12 +31,43 @@ export async function getSession(req: Request, res: Response, next: NextFunction
         },
       });
     } else if (guestToken) {
-      session = await prisma.chatSession.findFirst({
-        where: { guestToken, project },
+      // guestToken is globally unique — search without project filter first
+      const existingByToken = await prisma.chatSession.findFirst({
+        where: { guestToken },
         include: {
           messages: { orderBy: { createdAt: 'asc' } },
         },
       });
+      if (existingByToken && existingByToken.project === project) {
+        session = existingByToken;
+      } else if (existingByToken && existingByToken.project !== project) {
+        // Same guest, different project — use a project-scoped token variant
+        const scopedToken = `${guestToken}_${project}`;
+        session = await prisma.chatSession.findFirst({
+          where: { guestToken: scopedToken },
+          include: { messages: { orderBy: { createdAt: 'asc' } } },
+        });
+        if (!session) {
+          session = await prisma.chatSession.create({
+            data: {
+              guestToken: scopedToken,
+              guestName: guestName || null,
+              project,
+              isAiActive: true,
+              messages: {
+                create: {
+                  sender: 'AI',
+                  content: project === 'BUCARE_PLAZA'
+                    ? '¡Hola! Bienvenido a Bucare Plaza Comercial. ¿En qué puedo ayudarte hoy sobre nuestros locales y espacios comerciales?'
+                    : '¡Hola! Bienvenido a Bucare Suite. ¿En qué puedo ayudarte hoy sobre nuestros apartamentos de lujo?',
+                },
+              },
+            },
+            include: { messages: { orderBy: { createdAt: 'asc' } } },
+          });
+        }
+        return res.json(session);
+      }
     }
 
     if (!session) {
@@ -143,6 +174,21 @@ export async function sendMessage(req: Request, res: Response, next: NextFunctio
       },
     });
 
+    // ── Notificación Push al equipo por nuevo mensaje del cliente en chat web ──
+    try {
+      const senderLabel = session.guestName || (userId ? userEmail : 'Un invitado');
+      const { sendEventNotification } = await import('../notifications/notifications.routes.js');
+      sendEventNotification(
+        'chat.message',
+        'Nuevo mensaje en Chat 💬',
+        `${senderLabel}: "${message.trim().substring(0, 50)}${message.trim().length > 50 ? '...' : ''}"`,
+        `/dashboard/chat?session=${session.id}`
+      ).catch(e => console.error('[ChatController] Error enviando push chat.message:', e));
+    } catch (err) {
+      console.error('[ChatController] Failed to import sendEventNotification:', err);
+    }
+
+
     // 2. Si la IA está activa, generar respuesta con Gemini
     let aiMessage = null;
     if (session.isAiActive) {
@@ -163,6 +209,7 @@ export async function sendMessage(req: Request, res: Response, next: NextFunctio
         project: currentProject as 'BUCARE_SUITE' | 'BUCARE_PLAZA',
         systemPrompt: customConfig?.systemPrompt,
         selectedModel: customConfig?.selectedModel || undefined,
+        autoRotateModel: customConfig ? customConfig.autoRotateModel : true,
         history: historyFormatted,
         userMessage: message.trim(),
       });
@@ -384,15 +431,17 @@ export async function getAiConfig(_req: Request, res: Response, next: NextFuncti
  */
 export async function updateAiConfig(req: Request, res: Response, next: NextFunction) {
   try {
-    const { project, systemPrompt, selectedModel } = req.body;
+    const { project, systemPrompt, selectedModel, autoRotateModel } = req.body;
     if (!project || !systemPrompt) {
       return res.status(400).json({ error: 'Proyecto y System Prompt requeridos' });
     }
 
+    const isAutoRotate = autoRotateModel !== undefined ? Boolean(autoRotateModel) : true;
+
     const config = await prisma.aiConfig.upsert({
       where: { project },
-      update: { systemPrompt, selectedModel },
-      create: { project, systemPrompt, selectedModel },
+      update: { systemPrompt, selectedModel, autoRotateModel: isAutoRotate },
+      create: { project, systemPrompt, selectedModel, autoRotateModel: isAutoRotate },
     });
 
     return res.json({ status: 'success', data: config });

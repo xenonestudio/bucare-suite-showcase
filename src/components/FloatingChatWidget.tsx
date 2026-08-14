@@ -4,6 +4,7 @@ import { GoogleLoginButton } from "./GoogleLoginButton";
 import { RegisterWizardModal } from "./RegisterWizardModal";
 
 import { useSiteContent } from "@/hooks/useSiteContent";
+import { getApiUrl } from "@/lib/api";
 
 interface Message {
   id: string;
@@ -94,7 +95,7 @@ export function FloatingChatWidget() {
     }
 
     try {
-      const res = await fetch(`/api/v1/chat/session?project=${project}`, { headers });
+      const res = await fetch(getApiUrl(`/api/v1/chat/session?project=${project}`), { headers });
       if (res.ok) {
         const json = await res.json();
         setMessages(json.data.messages || []);
@@ -144,7 +145,7 @@ export function FloatingChatWidget() {
     const guestToken = localStorage.getItem("bucare_guest_token");
     if (guestToken) {
       try {
-        await fetch("/api/v1/chat/claim-guest-session", {
+        await fetch(getApiUrl("/api/v1/chat/claim-guest-session"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -221,7 +222,7 @@ export function FloatingChatWidget() {
     setMessages((prev) => [...prev, tempUserMsg]);
 
     try {
-      const res = await fetch("/api/v1/chat/send", {
+      const res = await fetch(getApiUrl("/api/v1/chat/send"), {
         method: "POST",
         headers,
         body: JSON.stringify({ message: userText, project, guestName: storedGuestName }),

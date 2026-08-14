@@ -140,25 +140,30 @@ const DEFAULT_SITE_CONTENT: Record<string, any> = {
 };
 
 // GET /api/v1/site-content -> Obtener todos los contenidos del sitio
-router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
-    const contents = await prisma.siteContent.findMany();
+    const contents = await prisma.siteContent.findMany().catch(() => []);
     const result: Record<string, any> = { ...DEFAULT_SITE_CONTENT };
 
-    contents.forEach((item) => {
-      try {
-        result[item.section] = JSON.parse(item.data);
-      } catch (err) {
-        console.error(`Error parsing site_content section ${item.section}:`, err);
-      }
-    });
+    if (Array.isArray(contents)) {
+      contents.forEach((item) => {
+        try {
+          result[item.section] = JSON.parse(item.data);
+        } catch (err) {
+          console.error(`Error parsing site_content section ${item.section}:`, err);
+        }
+      });
+    }
 
     res.status(200).json({
       success: true,
       data: result,
     });
   } catch (error) {
-    next(error);
+    res.status(200).json({
+      success: true,
+      data: DEFAULT_SITE_CONTENT,
+    });
   }
 });
 

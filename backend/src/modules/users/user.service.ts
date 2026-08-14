@@ -3,7 +3,7 @@ import { UserRepository } from './user.repository.js';
 import { ConflictError, NotFoundError } from '../../shared/errors/errors.js';
 import { eventBus } from '../../events/eventBus.js';
 import { inMemoryCache as cacheService } from '../../services/cache.service.js';
-import { User } from '@prisma/client';
+import { User } from '../../generated/client/index.js';
 export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
 

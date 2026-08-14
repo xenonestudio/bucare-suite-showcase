@@ -2,18 +2,20 @@ import app from './app.js';
 import { env } from './config/env.config.js';
 import { dbClient, prisma } from './config/database.config.js';
 import bcrypt from 'bcryptjs';
+import { startCitasReminderCron } from './services/citas-reminder.service.js';
 
-/**
- * Inicia el servidor backend HTTP y realiza comprobaciones previas.
- */
-async function startServer(): Promise<void> {
+// Conectar Base de Datos y realizar seeding en segundo plano sin bloquear Passenger
+async function initDb() {
   try {
-    // 1. Conectar adaptador de Base de Datos
     await dbClient.connect();
+    console.log('✅ Adaptador de Base de Datos conectado correctamente.');
 
-    // 1.5. Seed Superadmin si no existe
+    // Iniciar programador de notificaciones de citas
+    startCitasReminderCron();
+
     const superAdminEmail = 'xenonestudio@gmail.com';
-    const existingSuperAdmin = await prisma.user.findUnique({ where: { email: superAdminEmail } });
+
+    const existingSuperAdmin = await prisma.user.findUnique({ where: { email: superAdminEmail } }).catch(() => null);
     if (!existingSuperAdmin) {
       console.log('🌱 Sembrando usuario Superadmin inicial...');
       const passwordHash = await bcrypt.hash('2887245.Alex', 10);
@@ -25,43 +27,24 @@ async function startServer(): Promise<void> {
           role: 'SUPERADMIN',
           isActive: true,
         },
-      });
-      console.log('✅ Usuario Superadmin creado exitosamente.');
+      }).catch((e) => console.error('Error sembrando Superadmin:', e));
+      console.log('✅ Usuario Superadmin verificado.');
     }
-
-    // 2. Iniciar escucha HTTP
-    const server = app.listen(env.PORT, () => {
-      console.log(`🚀 Servidor Backend iniciado con éxito en el puerto ${env.PORT}`);
-      console.log(`🌍 Entorno: ${env.NODE_ENV}`);
-      console.log(`🔗 Healthcheck: http://localhost:${env.PORT}/api/v1/health`);
-    });
-
-    // Manejo de cierres limpios (Graceful Shutdown)
-    const shutdown = async (signal: string) => {
-      console.log(`\n⚠️ Señal ${signal} recibida. Cerrando servidor de forma limpia...`);
-      server.close(async () => {
-        await dbClient.disconnect();
-        console.log('✅ Servidor y conexiones cerradas correctamente.');
-        process.exit(0);
-      });
-    };
-
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
-    console.error('❌ Error crítico durante el inicio del servidor:', error);
-    process.exit(1);
+    console.error('⚠️ Advertencia: Error inicializando la BD en segundo plano:', error);
   }
 }
 
-// Captura de errores no controlados a nivel de proceso
-process.on('unhandledRejection', (reason: unknown) => {
-  console.error('💥 Unhandled Rejection detectado:', reason);
-});
+initDb();
 
-process.on('uncaughtException', (error: Error) => {
-  console.error('💥 Uncaught Exception detectado:', error);
-  process.exit(1);
-});
+// Si se ejecuta de forma independiente (fuera de Phusion Passenger), iniciar escucha en puerto
+if (!process.env.PHUSION_PASSENGER && !process.env.PASSENGER_APP_ENV) {
+  const portToListen = env.PORT || 5000;
+  app.listen(portToListen, () => {
+    console.log(`🚀 Servidor Backend iniciado localmente en puerto: ${portToListen}`);
+  });
+}
 
-startServer();
+// Exportar Express app para que Phusion Passenger en cPanel la gestione de forma nativa sin colisión de socket
+export default app;
+module.exports = app;

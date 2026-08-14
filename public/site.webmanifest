@@ -1,0 +1,17 @@
+{
+  "name": "Bucare Suite",
+  "short_name": "Bucare",
+  "description": "Apartamentos contemporáneos de alta gama en San Cristóbal, Nueva Guayana.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#213B26",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

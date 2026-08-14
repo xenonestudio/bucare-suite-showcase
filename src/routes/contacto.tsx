@@ -1,19 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
+import { ArrowUpRight, Mail, MapPin, Phone, Instagram, Globe } from "lucide-react";
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useSiteContent } from "@/hooks/useSiteContent";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export const Route = createFileRoute("/contacto")({
   head: () => ({
     meta: [
-      { title: "Contacto — Bucare Suite" },
-      { name: "description", content: "Agenda una visita privada o solicita información sobre los apartamentos de Bucare Suite en San Cristóbal, Nueva Guayana." },
-      { property: "og:title", content: "Contacto — Bucare Suite" },
+      { title: "Contacto — Bucare Suite | Agenda tu Visita" },
+      { name: "description", content: "Agenda una visita privada o solicita información sobre los apartamentos de Bucare Suite en San Cristóbal, Nueva Guayana. Recorridos presenciales y virtuales." },
+      { property: "og:title", content: "Contacto — Bucare Suite | Agenda tu Visita" },
       { property: "og:description", content: "Reserva tu visita a Bucare Suite en Nueva Guayana y conoce los apartamentos disponibles." },
-      { property: "og:image", content: "/logo.webp" },
+      { property: "og:url", content: "https://bucaresuite.com/contacto" },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://bucaresuite.com/og-image.jpg" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Contacto — Bucare Suite" },
+      { name: "twitter:description", content: "Agenda una visita privada a Bucare Suite. Recorridos presenciales y virtuales." },
+      { name: "twitter:image", content: "https://bucaresuite.com/og-image.jpg" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://bucaresuite.com/contacto" },
     ],
   }),
   component: Contacto,
@@ -21,7 +31,7 @@ export const Route = createFileRoute("/contacto")({
 
 function Contacto() {
   const [sent, setSent] = useState(false);
-  const { content } = useSiteContent();
+  const { content, loading } = useSiteContent();
   const c = content.contacto;
 
   return (
@@ -40,11 +50,18 @@ function Contacto() {
         <div className="px-5 sm:px-8 md:px-14 py-10 sm:py-16 md:py-24 border-b lg:border-b-0 lg:border-r border-border flex flex-col justify-between">
           <div>
             <h1 className="text-display text-3xl sm:text-5xl md:text-7xl uppercase leading-[0.95] font-bold whitespace-pre-line">
-              {c.title}
+              {loading ? <Skeleton className="h-16 w-3/4 bg-primary/10" /> : c.title}
             </h1>
-            <p className="mt-4 sm:mt-8 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              {c.subtitle}
-            </p>
+            <div className="mt-4 sm:mt-8 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              {loading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full bg-primary/10" />
+                  <Skeleton className="h-4 w-5/6 bg-primary/10" />
+                </div>
+              ) : (
+                c.subtitle
+              )}
+            </div>
           </div>
 
           <div className="mt-10 sm:mt-16 space-y-6 text-xs sm:text-sm">
@@ -52,21 +69,40 @@ function Contacto() {
               <MapPin className="w-4 h-4 mt-1 text-primary shrink-0" />
               <div>
                 <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-0.5">Dirección</div>
-                <div className="whitespace-pre-line">{c.address}</div>
+                <div>{loading ? <Skeleton className="h-4 w-48 bg-primary/10" /> : c.address}</div>
               </div>
             </div>
             <div className="flex items-start gap-4">
               <Phone className="w-4 h-4 mt-1 text-primary shrink-0" />
               <div>
                 <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-0.5">Teléfono</div>
-                <div>{c.phone}</div>
+                <div>{loading ? <Skeleton className="h-4 w-32 bg-primary/10" /> : c.phone}</div>
               </div>
             </div>
             <div className="flex items-start gap-4">
               <Mail className="w-4 h-4 mt-1 text-primary shrink-0" />
               <div>
                 <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-0.5">Email</div>
-                <div>{c.email}</div>
+                <div>{loading ? <Skeleton className="h-4 w-40 bg-primary/10" /> : c.email}</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <Instagram className="w-4 h-4 mt-1 text-primary shrink-0" />
+              <div>
+                <div className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground font-semibold mb-0.5">Instagram</div>
+                <a href="https://www.instagram.com/bucaresuite/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                  @bucaresuite
+                </a>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border/50">
+              <div className="flex items-start gap-3 p-3.5 rounded-lg bg-primary/5 border border-primary/20">
+                <Globe className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                <div className="text-xs">
+                  <div className="font-semibold text-foreground">¿Resides en el exterior?</div>
+                  <div className="text-muted-foreground mt-0.5">Coordinamos presentaciones virtuales 1 a 1 y brindamos asesoría legal/financiera para inversión remota segura.</div>
+                </div>
               </div>
             </div>
           </div>

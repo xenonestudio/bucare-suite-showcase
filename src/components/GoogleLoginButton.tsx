@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { getApiUrl } from "@/lib/api";
 
 interface GoogleLoginButtonProps {
   onSuccess: (data: { token: string; user: any }) => void;
@@ -36,7 +37,7 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
               if (!response?.credential) return;
               setIsLoading(true);
               try {
-                const apiRes = await fetch("/api/v1/auth/google", {
+                const apiRes = await fetch(getApiUrl("/api/v1/auth/google"), {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ idToken: response.credential }),

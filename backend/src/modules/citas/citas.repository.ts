@@ -10,12 +10,30 @@ export class CitasRepository {
         tipoPropiedad: data.tipoPropiedad,
         notas: data.notas,
       },
+      include: {
+        cliente: {
+          select: {
+            fullName: true,
+            email: true,
+          },
+        },
+      },
     });
   }
 
   async findAll() {
     return prisma.cita.findMany({
       orderBy: { fecha: 'asc' },
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
+      },
     });
   }
 

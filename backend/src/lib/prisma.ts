@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/client/index.js';
 
 // Singleton pattern: reutiliza la misma instancia del cliente Prisma
 // para evitar que se creen múltiples pools de conexiones.

@@ -6,17 +6,28 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useSiteContent } from "@/hooks/useSiteContent";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getApiUrl, getResourceUrl } from "@/lib/api";
 import heroBuilding from "@/assets/hero-building.webp";
 import property3 from "@/assets/property-3.webp";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Bucare Suite — Apartamentos en Nueva Guayana" },
+      { title: "Bucare Suite — Apartamentos de Lujo en Nueva Guayana" },
       { name: "description", content: "Bucare Suite: apartamentos contemporáneos en San Cristóbal, Nueva Guayana. Diseño, serenidad y lujo a través de arquitectura inteligente." },
-      { property: "og:title", content: "Bucare Suite — Apartamentos en Nueva Guayana" },
-      { property: "og:description", content: "Apartamentos contemporáneos en San Cristóbal, Nueva Guayana." },
-      { property: "og:image", content: "/logo.webp" },
+      { property: "og:title", content: "Bucare Suite — Apartamentos de Lujo en Nueva Guayana" },
+      { property: "og:description", content: "Apartamentos contemporáneos de alta gama en San Cristóbal, Nueva Guayana. Arquitectura inteligente, elegancia atemporal." },
+      { property: "og:url", content: "https://bucaresuite.com/" },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://bucaresuite.com/og-image.jpg" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Bucare Suite — Apartamentos de Lujo en Nueva Guayana" },
+      { name: "twitter:description", content: "Apartamentos contemporáneos de alta gama en San Cristóbal. Arquitectura inteligente y serenidad atemporal." },
+      { name: "twitter:image", content: "https://bucaresuite.com/og-image.jpg" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://bucaresuite.com/" },
     ],
   }),
   component: Index,
@@ -31,7 +42,7 @@ const faqs = [
 
 function Index() {
   const { isAuthenticated, user } = useAuth();
-  const { content } = useSiteContent();
+  const { content, loading } = useSiteContent();
   const [registeredAvatars, setRegisteredAvatars] = useState<Array<{ id: string; name: string; avatar: string }>>([]);
   const [videoReady, setVideoReady] = useState(false);
   const userEmail = user?.email || "";
@@ -42,7 +53,7 @@ function Index() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch("/api/v1/users");
+        const res = await fetch(getApiUrl("/api/v1/users"));
         if (res.ok) {
           const json = await res.json();
           if (json.success && Array.isArray(json.data)) {
@@ -88,12 +99,15 @@ function Index() {
           {hero.mainVideo ? (
             <div className="w-full h-[75vh] sm:h-[85vh] md:h-[88vh] min-h-[460px] sm:min-h-[580px] relative">
               <img
-                src={hero.mainImage || heroBuilding}
+                src={getResourceUrl(hero.mainImage) || heroBuilding}
                 alt="Bucare Suite poster"
+                // @ts-ignore
+                fetchPriority="high"
+                decoding="async"
                 className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${videoReady ? "opacity-0" : "opacity-100"}`}
               />
               <video
-                src={hero.mainVideo}
+                src={getResourceUrl(hero.mainVideo)}
                 autoPlay
                 loop
                 muted
@@ -105,10 +119,13 @@ function Index() {
             </div>
           ) : (
             <img
-              src={hero.mainImage || heroBuilding}
+              src={getResourceUrl(hero.mainImage) || heroBuilding}
               alt="Bucare Suite edificio de apartamentos de lujo"
               width={1920}
               height={1200}
+              // @ts-ignore
+              fetchPriority="high"
+              decoding="async"
               className="w-full h-[75vh] sm:h-[85vh] md:h-[88vh] min-h-[460px] sm:min-h-[580px] object-cover"
             />
           )}
@@ -122,11 +139,26 @@ function Index() {
           <div className="absolute inset-0 flex flex-col justify-between px-5 sm:px-8 md:px-14 pt-36 sm:pt-44 md:pt-48 pb-8 sm:pb-10 text-white">
             <div className="max-w-3xl">
               <h1 className="text-display text-3xl sm:text-5xl md:text-[5vw] leading-[1.0] sm:leading-[0.9] font-bold tracking-tight text-white animate-fade-in-up whitespace-pre-line">
-                {hero.title}
+                {loading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-10 sm:h-12 md:h-[4.5vw] w-11/12 bg-white/20" />
+                    <Skeleton className="h-10 sm:h-12 md:h-[4.5vw] w-3/4 bg-white/20" />
+                  </div>
+                ) : (
+                  hero.title
+                )}
               </h1>
-              <p className="mt-4 sm:mt-6 max-w-lg text-sm sm:text-base md:text-lg text-neutral-200 leading-relaxed animate-fade-in-up delay-100">
-                {hero.subtitle}
-              </p>
+              <div className="mt-4 sm:mt-6 max-w-lg text-sm sm:text-base md:text-lg text-neutral-200 leading-relaxed animate-fade-in-up delay-100">
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full bg-white/20" />
+                    <Skeleton className="h-4 w-11/12 bg-white/20" />
+                    <Skeleton className="h-4 w-4/5 bg-white/20" />
+                  </div>
+                ) : (
+                  hero.subtitle
+                )}
+              </div>
 
               <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-4 animate-fade-in-up delay-200">
                 {isAuthenticated ? (
@@ -171,10 +203,19 @@ function Index() {
                 </div>
 
                 <div>
-                  <div className="text-display text-xl sm:text-2xl font-bold">{hero.statsNumber}</div>
-                  <div className="text-[11px] sm:text-xs text-neutral-200 max-w-[180px]">
-                    {hero.statsLabel}
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-7 w-20 bg-white/20" />
+                    <Skeleton className="h-3 w-28 bg-white/20" />
                   </div>
+                ) : (
+                  <>
+                    <div className="text-display text-xl sm:text-2xl font-bold">{hero.statsNumber}</div>
+                    <div className="text-[11px] sm:text-xs text-neutral-200 max-w-[180px]">
+                      {hero.statsLabel}
+                    </div>
+                  </>
+                )}
                 </div>
             </div>
           </div>
@@ -188,10 +229,10 @@ function Index() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 sm:mb-10">
             <div className="max-w-xl">
               <h2 className="text-display text-2xl sm:text-4xl md:text-5xl uppercase font-bold leading-tight whitespace-pre-line">
-                {proximo.title}
+                {loading ? <Skeleton className="h-9 w-64 bg-primary/10" /> : proximo.title}
               </h2>
               <p className="mt-3 text-xs sm:text-sm uppercase tracking-[0.15em] text-muted-foreground leading-relaxed">
-                {proximo.subtitle}
+                {loading ? <Skeleton className="h-4 w-48 bg-primary/10" /> : proximo.subtitle}
               </p>
             </div>
             <Link
@@ -202,7 +243,16 @@ function Index() {
             </Link>
           </div>
 
-          {proximo.properties && proximo.properties.length > 0 && (
+          {loading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+              {/* Tarjeta Principal Esqueleto */}
+              <Skeleton className="h-[400px] sm:h-[516px] rounded-lg bg-primary/5 border border-border/40" />
+              <div className="flex flex-col gap-6">
+                <Skeleton className="h-[188px] sm:h-[246px] rounded-lg bg-primary/5 border border-border/40" />
+                <Skeleton className="h-[188px] sm:h-[246px] rounded-lg bg-primary/5 border border-border/40" />
+              </div>
+            </div>
+          ) : proximo.properties && proximo.properties.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
               {/* Tarjeta Principal (Tarjeta 1) */}
               {(() => {
@@ -212,16 +262,16 @@ function Index() {
                 const CardContent = (
                   <div className="relative overflow-hidden rounded-lg group h-[400px] sm:h-[516px] cursor-pointer border border-border/40 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10">
                     <img
-                      src={p1.img}
+                      src={getResourceUrl(p1.img)}
                       alt={p1.name}
                       width={1200}
                       height={900}
                       loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                     />
-                    <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 flex items-end justify-between bg-gradient-to-t from-black/90 via-black/50 to-transparent text-white transition-opacity duration-300">
+                    <div className="card-overlay-text absolute inset-x-0 bottom-0 p-6 sm:p-8 flex items-end justify-between bg-gradient-to-t from-black/90 via-black/50 to-transparent transition-opacity duration-300">
                       <div>
-                        <div className="text-display text-xl sm:text-3xl uppercase tracking-wide font-bold group-hover:text-primary transition-colors duration-300">{p1.name}</div>
+                        <h3 className="text-display text-xl sm:text-3xl uppercase tracking-wide font-bold">{p1.name}</h3>
                         <div className="flex items-baseline gap-2 mt-1">
                           <span className="text-display text-xl sm:text-2xl font-bold">{p1.price}</span>
                           {p1.area && <span className="text-xs opacity-80">/ {p1.area}</span>}
@@ -248,16 +298,16 @@ function Index() {
                   const CardContent = (
                     <div className="relative overflow-hidden rounded-lg group h-[200px] sm:h-[248px] cursor-pointer border border-border/40 hover:border-primary/50 transition-all duration-500 hover:shadow-xl hover:shadow-primary/10">
                       <img
-                        src={p.img}
+                        src={getResourceUrl(p.img)}
                         alt={p.name}
                         width={1000}
                         height={700}
                         loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                       />
-                      <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 flex items-end justify-between bg-gradient-to-t from-black/90 via-black/40 to-transparent text-white transition-opacity duration-300">
+                      <div className="card-overlay-text absolute inset-x-0 bottom-0 p-4 sm:p-5 flex items-end justify-between bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity duration-300">
                         <div>
-                          <div className="text-display text-base sm:text-lg uppercase tracking-wide font-bold group-hover:text-primary transition-colors duration-300">{p.name}</div>
+                          <h3 className="text-display text-base sm:text-lg uppercase tracking-wide font-bold">{p.name}</h3>
                           <div className="flex items-baseline gap-2 mt-0.5">
                             {p.price && <span className="text-xs font-semibold opacity-90">{p.price}</span>}
                             {p.area && <span className="text-[10px] opacity-75">/ {p.area}</span>}
@@ -307,6 +357,25 @@ function Index() {
           </div>
         </div>
       </section>
+
+      {/* FAQ Schema JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": (content.faq?.items || faqs).map((f: { q: string; a: string }) => ({
+              "@type": "Question",
+              "name": f.q,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": f.a,
+              },
+            })),
+          }),
+        }}
+      />
 
       <Footer />
     </div>

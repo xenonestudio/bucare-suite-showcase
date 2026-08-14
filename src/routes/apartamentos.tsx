@@ -6,16 +6,26 @@ import { Footer } from "@/components/Footer";
 import { useSiteContent } from "@/hooks/useSiteContent";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export const Route = createFileRoute("/apartamentos")({
   head: () => ({
     meta: [
-      { title: "Apartamentos — Bucare Suite" },
-      { name: "description", content: "Explora los 6 modelos de apartamentos disponibles en Bucare Suite, San Cristóbal, Nueva Guayana. Planos y renders de cada tipología." },
-      { property: "og:title", content: "Apartamentos — Bucare Suite" },
-      { property: "og:description", content: "6 modelos de apartamentos en Bucare Suite, San Cristóbal, Nueva Guayana." },
-      { property: "og:image", content: "/logo.webp" },
+      { title: "Apartamentos — Bucare Suite | Modelos y Planos" },
+      { name: "description", content: "Explora los 6 modelos de apartamentos disponibles en Bucare Suite, San Cristóbal, Nueva Guayana. Planos, renders y distribuciones de cada tipología." },
+      { property: "og:title", content: "Apartamentos — Bucare Suite | Modelos y Planos" },
+      { property: "og:description", content: "6 modelos de apartamentos con planos y renders en Bucare Suite, San Cristóbal, Nueva Guayana." },
+      { property: "og:url", content: "https://bucaresuite.com/apartamentos" },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://bucaresuite.com/og-image.jpg" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Apartamentos — Bucare Suite" },
+      { name: "twitter:description", content: "Explora los 6 modelos de apartamentos en Bucare Suite. Planos y renders de cada tipología." },
+      { name: "twitter:image", content: "https://bucaresuite.com/og-image.jpg" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://bucaresuite.com/apartamentos" },
     ],
   }),
   component: Apartamentos,
@@ -36,7 +46,7 @@ type Model = {
 };
 
 function Apartamentos() {
-  const { content } = useSiteContent();
+  const { content, loading } = useSiteContent();
   const resData = content.apartamentos;
   const models = resData.models || [];
 
@@ -67,11 +77,19 @@ function Apartamentos() {
       <section className="px-5 sm:px-8 md:px-10 py-8 sm:py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-end">
           <h1 className="md:col-span-8 text-display text-3xl sm:text-5xl md:text-7xl uppercase leading-[0.95] font-bold whitespace-pre-line">
-            {resData.title}
+            {loading ? <Skeleton className="h-16 w-3/4 bg-primary/10" /> : resData.title}
           </h1>
-          <p className="md:col-span-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            {resData.subtitle}
-          </p>
+          <div className="md:col-span-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            {loading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full bg-primary/10" />
+                <Skeleton className="h-4 w-11/12 bg-primary/10" />
+                <Skeleton className="h-4 w-4/5 bg-primary/10" />
+              </div>
+            ) : (
+              resData.subtitle
+            )}
+          </div>
         </div>
       </section>
 
@@ -151,7 +169,38 @@ function Apartamentos() {
 
       {/* Split screen: sidebar + detail */}
       <section className="px-4 sm:px-6 md:px-10 pb-16 sm:pb-24 flex-1">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 border-t border-border pt-6">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 border-t border-border pt-6">
+            {/* Sidebar Skeleton */}
+            <aside className="md:col-span-4 lg:col-span-3 space-y-4">
+              <Skeleton className="h-4 w-32 bg-primary/10" />
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} className="h-16 w-full bg-primary/5 rounded-md" />
+                ))}
+              </div>
+            </aside>
+            {/* Detail content skeleton */}
+            <div className="md:col-span-8 lg:col-span-9 grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-7 space-y-4">
+                <Skeleton className="h-6 w-48 bg-primary/10" />
+                <Skeleton className="h-[400px] w-full bg-primary/5 rounded-lg" />
+              </div>
+              <div className="lg:col-span-5 space-y-6">
+                <Skeleton className="h-8 w-32 bg-primary/10" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full bg-primary/10" />
+                  <Skeleton className="h-4 w-11/12 bg-primary/10" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Skeleton className="h-20 w-full bg-primary/5 rounded-md" />
+                  <Skeleton className="h-20 w-full bg-primary/5 rounded-md" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 border-t border-border pt-6">
           {/* Horizontal scrollable model selector on mobile, vertical list on desktop */}
           <aside className="md:col-span-4 lg:col-span-3">
             <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3 font-semibold">
@@ -478,7 +527,43 @@ function Apartamentos() {
             </div>
           </div>
         </div>
+        )}
       </section>
+
+      {/* Apartment Complex JSON-LD Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ApartmentComplex",
+            "name": "Bucare Suite",
+            "description": "Conjunto residencial de apartamentos de lujo en San Cristóbal, Nueva Guayana. Oportunidad de inversión de alta gama.",
+            "url": "https://bucaresuite.com/apartamentos",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "QQJC+93C",
+              "addressLocality": "San Cristóbal",
+              "addressRegion": "Táchira",
+              "addressCountry": "VE"
+            },
+            "numberOfAccommodationUnits": models.length,
+            "containsPlace": models.map((m) => ({
+              "@type": "Accommodation",
+              "name": m.name,
+              "description": `Apartamento modelo ${m.name} en Bucare Suite. ${m.bedrooms} hab, ${m.bathrooms} baños, ${m.area}.`,
+              "floorSize": {
+                "@type": "QuantitativeValue",
+                "value": m.area,
+                "unitCode": "MTK"
+              },
+              "numberOfRooms": m.bedrooms,
+              "numberOfBathroomsTotal": m.bathrooms,
+              "image": `https://bucaresuite.com${m.render}`
+            }))
+          }),
+        }}
+      />
 
       <Footer />
 

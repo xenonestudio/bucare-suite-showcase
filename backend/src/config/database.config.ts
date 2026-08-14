@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/client/index.js';
 import { logger } from './logger.config.js';
 
 export interface IDatabaseClient {
@@ -11,7 +11,13 @@ class PrismaDatabaseClient implements IDatabaseClient {
   public client: PrismaClient;
 
   constructor() {
-    this.client = new PrismaClient();
+    const globalRef = global as unknown as { prisma?: PrismaClient };
+    if (!globalRef.prisma) {
+      globalRef.prisma = new PrismaClient({
+        log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+      });
+    }
+    this.client = globalRef.prisma;
   }
 
   public async connect(): Promise<void> {

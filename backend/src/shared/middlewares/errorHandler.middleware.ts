@@ -35,5 +35,7 @@ export const globalErrorHandler = (
     ...(env.NODE_ENV === 'development' && { stack: err.stack }),
   };
 
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.status(statusCode).json(responsePayload);
 };

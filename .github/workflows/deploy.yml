@@ -1,49 +1,104 @@
-name: Deploy to GitHub Pages
+name: Deploy to cPanel via FTP
 
 on:
   push:
     branches:
       - main
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
+          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies & Build Backend
+        run: |
+          cd backend
+          npm ci
+          npm run build
+          cd ..
 
-      - name: Build project
-        run: npm run build
+      - name: Install dependencies & Build Frontend
+        run: |
+          npm ci
+          npm run build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Package builds into archives
+        run: |
+          tar -czf frontend.tar.gz .output app.js package.json package-lock.json
+          tar -czf backend.tar.gz -C backend dist prisma package.json package-lock.json
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Create deploy_helper.php
+        run: |
+          cat << 'EOF' > deploy_helper.php
+          <?php
+          header('Content-Type: text/plain');
+          $public_html = __DIR__;
+          $frontend_path = dirname(__DIR__) . '/bucaresuite/frontend';
+          $backend_path = dirname(__DIR__) . '/bucaresuite/backend';
+
+          echo "Iniciando extracción remota...\n";
+
+          if (!file_exists($frontend_path)) {
+              mkdir($frontend_path, 0755, true);
+          }
+          if (!file_exists($backend_path)) {
+              mkdir($backend_path, 0755, true);
+          }
+
+          if (file_exists("$public_html/frontend.tar.gz")) {
+              echo "Procesando Frontend...\n";
+              rename("$public_html/frontend.tar.gz", "$frontend_path/frontend.tar.gz");
+              $output = [];
+              exec("tar -xzf $frontend_path/frontend.tar.gz -C $frontend_path 2>&1", $output, $return_var);
+              echo implode("\n", $output) . "\n";
+              if ($return_var === 0) {
+                  unlink("$frontend_path/frontend.tar.gz");
+                  @mkdir("$frontend_path/tmp", 0755, true);
+                  touch("$frontend_path/tmp/restart.txt");
+                  echo "Frontend extraído con éxito.\n";
+              }
+          }
+          if (file_exists("$public_html/backend.tar.gz")) {
+              echo "Procesando Backend...\n";
+              rename("$public_html/backend.tar.gz", "$backend_path/backend.tar.gz");
+              $output = [];
+              exec("tar -xzf $backend_path/backend.tar.gz -C $backend_path 2>&1", $output, $return_var);
+              echo implode("\n", $output) . "\n";
+              if ($return_var === 0) {
+                  unlink("$backend_path/backend.tar.gz");
+                  @mkdir("$backend_path/tmp", 0755, true);
+                  touch("$backend_path/tmp/restart.txt");
+                  echo "Backend extraído con éxito.\n";
+              }
+          }
+          unlink(__FILE__);
+          echo "Despliegue completado con éxito.\n";
+          EOF
+
+      - name: Upload all deployment files to public_html via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          path: ".output/public"
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          port: ${{ secrets.FTP_PORT || 21 }}
+          local-dir: ./
+          server-dir: ${{ secrets.REMOTE_PUBLIC_HTML || 'public_html/' }}
+          exclude: |
+            **
+            !frontend.tar.gz
+            !backend.tar.gz
+            !deploy_helper.php
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Trigger remote extraction via HTTP call
+        run: |
+          curl -s "http://${{ secrets.FTP_HOST }}/deploy_helper.php"

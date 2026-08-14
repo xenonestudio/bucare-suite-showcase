@@ -146,6 +146,9 @@ a.bg-primary,
 }
 
 @layer base {
+  html {
+    font-size: calc(16px * var(--body-scale, 1));
+  }
   * {
     border-color: var(--color-border);
   }
@@ -155,11 +158,22 @@ a.bg-primary,
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 {
+  h1, h2, h3, h4, .text-display {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
-    color: var(--color-primary);
+    color: var(--title-color, var(--color-primary));
   }
+}
+
+/* ── Card Image Overlays — always white regardless of theme ── */
+.card-overlay-text,
+.card-overlay-text h1,
+.card-overlay-text h2,
+.card-overlay-text h3,
+.card-overlay-text h4,
+.card-overlay-text span,
+.card-overlay-text p {
+  color: #ffffff !important;
 }
 
 /* ── Dashboard Dark Shell ── */

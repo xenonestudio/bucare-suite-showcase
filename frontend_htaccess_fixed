@@ -1,0 +1,12 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerEnabled On
+PassengerAppRoot "/home/lexsankx/bucaresuite/frontend"
+PassengerBaseURI "/"
+PassengerNodejs "/home/lexsankx/nodevenv/bucaresuite/backend/20/bin/node"
+PassengerAppType node
+PassengerStartupFile app.js
+PassengerMinInstances 1
+PassengerMaxRequests 5000
+PassengerPoolIdleTime 300
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+

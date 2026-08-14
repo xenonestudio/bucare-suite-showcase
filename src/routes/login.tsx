@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, AlertTriangle } from "lucide-react";
 import heroBuilding from "@/assets/hero-building.jpg";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
+import { getApiUrl } from "@/lib/api";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -22,6 +23,19 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [expiredMsg, setExpiredMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('expired') === '1') {
+        const reason = localStorage.getItem('auth_expired_reason') ||
+          'Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
+        setExpiredMsg(reason);
+        localStorage.removeItem('auth_expired_reason');
+      }
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +43,7 @@ function Login() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/v1/auth/login", {
+      const response = await fetch(getApiUrl("/api/v1/auth/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -47,11 +61,18 @@ function Login() {
       localStorage.setItem("token", data.data.token);
       localStorage.setItem("user", JSON.stringify(data.data.user));
 
+      // Asociar visitante anónimo con el usuario en analíticas
+      if (data.data.user?.id) {
+        const { associateVisitorWithUser } = await import("../lib/tracker");
+        await associateVisitorWithUser(data.data.user.id).catch(() => null);
+      }
+
+
       // Reclamar / vincular sesión de chat si navegó previamente como invitado
       const guestToken = localStorage.getItem("bucare_guest_token");
       if (guestToken) {
         try {
-          await fetch("/api/v1/chat/claim-guest-session", {
+          await fetch(getApiUrl("/api/v1/chat/claim-guest-session"), {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -109,11 +130,19 @@ function Login() {
             Accede a<br />tu cuenta
           </h1>
 
+          {expiredMsg && (
+            <div className="mb-4 flex items-start gap-2.5 text-xs font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-600 p-3 rounded-md animate-fade-in">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+              {expiredMsg}
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 text-xs font-semibold text-red-500 border border-red-500/20 bg-red-500/10 p-3 rounded-md">
               {error}
             </div>
           )}
+
 
           <form onSubmit={handleLogin} className="space-y-6">
             <Field 
@@ -159,9 +188,16 @@ function Login() {
           <div className="mb-8">
             <GoogleLoginButton
               text="Ingresar con Google"
-              onSuccess={(data) => {
+              onSuccess={async (data) => {
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("user", JSON.stringify(data.user));
+                
+                // Asociar visitante anónimo con el usuario
+                if (data.user?.id) {
+                  const { associateVisitorWithUser } = await import("../lib/tracker");
+                  await associateVisitorWithUser(data.user.id).catch(() => null);
+                }
+
                 navigate({ to: "/" });
               }}
               onError={(msg) => setError(msg)}

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
 import {
   Search,
@@ -9,7 +9,6 @@ import {
   CalendarDays,
   Filter,
   Download,
-  Building2,
   Users,
   UserCheck,
   UserX,
@@ -21,13 +20,11 @@ import {
   Eye,
   Pencil,
   Ban,
+  CheckCircle2,
+  ShieldCheck,
+  X,
 } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -47,16 +44,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/dashboard/clientes")({
-  component: DashboardClientes,
+  component: DashboardUsuarios,
 });
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-interface Cliente {
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Usuario {
   id: string;
   email: string;
   fullName?: string;
@@ -67,7 +63,17 @@ interface Cliente {
   createdAt: string;
 }
 
-interface FormCliente {
+type RoleFilter = "TODOS" | "CLIENTE" | "ADMIN" | "SUPERADMIN" | "VENTAS" | "CONTADOR" | "PROYECTO";
+type StatusFilter = "todos" | "activo" | "inactivo";
+
+interface EditForm {
+  fullName: string;
+  phoneNumber: string;
+  role: string;
+  isActive: boolean;
+}
+
+interface CreateForm {
   fullName: string;
   email: string;
   phoneNumber: string;
@@ -75,126 +81,184 @@ interface FormCliente {
   password: string;
 }
 
-const API_BASE = "https://bucaredemo.ddns.net/api/v1";
-const ITEMS_PER_PAGE = 8;
+import { getApiUrl } from "@/lib/api";
+
+const ITEMS_PER_PAGE = 10;
+
+// ─── Role Badge ───────────────────────────────────────────────────────────────
+const ROLE_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  SUPERADMIN: { bg: "rgba(225,182,104,0.15)", text: "#E1B668", border: "rgba(225,182,104,0.3)" },
+  ADMIN:      { bg: "rgba(99,179,237,0.12)",  text: "#63B3ED", border: "rgba(99,179,237,0.3)"  },
+  VENTAS:     { bg: "rgba(104,211,145,0.12)", text: "#68D391", border: "rgba(104,211,145,0.3)" },
+  CONTADOR:   { bg: "rgba(183,148,246,0.12)", text: "#B794F6", border: "rgba(183,148,246,0.3)" },
+  PROYECTO:   { bg: "rgba(246,173,85,0.12)",  text: "#F6AD55", border: "rgba(246,173,85,0.3)"  },
+  CLIENTE:    { bg: "rgba(255,255,255,0.06)", text: "var(--dash-muted)", border: "rgba(255,255,255,0.1)" },
+};
+
+function RoleBadge({ role }: { role: string }) {
+  const style = ROLE_STYLES[role] ?? ROLE_STYLES.CLIENTE;
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "2px 9px",
+        borderRadius: "99px",
+        fontSize: "0.6rem",
+        fontWeight: 700,
+        letterSpacing: "0.07em",
+        background: style.bg,
+        color: style.text,
+        border: `1px solid ${style.border}`,
+      }}
+    >
+      {role}
+    </span>
+  );
+}
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 function KpiCard({
-  label,
-  value,
-  icon: Icon,
-  color,
+  label, value, icon: Icon, accent,
 }: {
-  label: string;
-  value: number | string;
-  icon: React.ElementType;
-  color: string;
+  label: string; value: number | string; icon: React.ElementType; accent: string;
 }) {
   return (
-    <Card className="bg-white border-border/60 shadow-2xs relative overflow-hidden group hover:shadow-md transition-all duration-200">
-      <div className={`absolute top-0 left-0 w-1 h-full ${color}`} />
-      <CardContent className="pt-5 pb-4 px-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-              {label}
-            </p>
-            <p className="text-2xl font-bold font-display text-foreground">
-              {value}
-            </p>
-          </div>
-          <div className={`p-2.5 rounded-lg ${color.replace("bg-", "bg-").replace("600", "100").replace("primary", "primary/10")} mt-0.5`}>
-            <Icon className={`w-4 h-4 ${color.replace("bg-", "text-").replace("/60", "")}`} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div
+      style={{
+        background: "var(--dash-card)",
+        border: "1px solid var(--dash-border)",
+        borderRadius: "16px",
+        padding: "20px 22px",
+        display: "flex",
+        alignItems: "center",
+        gap: "16px",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          width: "42px", height: "42px", borderRadius: "12px",
+          background: `${accent}18`,
+          border: `1px solid ${accent}30`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Icon size={18} style={{ color: accent }} />
+      </div>
+      <div>
+        <p style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--dash-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          {label}
+        </p>
+        <p style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--dash-text)", lineHeight: 1.1, fontFamily: "var(--font-display)" }}>
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Skeleton Row ─────────────────────────────────────────────────────────────
+function SkeletonRow() {
+  return (
+    <tr>
+      {[1,2,3,4,5,6].map(i => (
+        <td key={i} style={{ padding: "14px 16px" }}>
+          <div style={{
+            height: i === 1 ? "36px" : "14px",
+            width: i === 1 ? "160px" : "80px",
+            borderRadius: "8px",
+            background: "rgba(255,255,255,0.05)",
+            animation: "pulse 1.5s ease-in-out infinite",
+          }} />
+        </td>
+      ))}
+    </tr>
   );
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-function DashboardClientes() {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+function DashboardUsuarios() {
+  const router = useRouter();
+
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState<"todos" | "activo" | "inactivo">("todos");
+  const [filtroEstado, setFiltroEstado] = useState<StatusFilter>("todos");
+  const [filtroRol, setFiltroRol] = useState<RoleFilter>("TODOS");
   const [pagina, setPagina] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string>("SUPERADMIN");
+
+  // Modales
+  const [showCreate, setShowCreate] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<Usuario | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string>("SUPERADMIN");
+
+  const [createForm, setCreateForm] = useState<CreateForm>({
+    fullName: "", email: "", phoneNumber: "", birthDate: "", password: "",
+  });
+  const [editForm, setEditForm] = useState<EditForm>({
+    fullName: "", phoneNumber: "", role: "CLIENTE", isActive: true,
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
+      const stored = localStorage.getItem("user");
+      if (stored) {
         try {
-          const parsed = JSON.parse(storedUser);
+          const parsed = JSON.parse(stored);
           if (parsed.role) setUserRole(parsed.role);
-        } catch (e) {
-          console.error("Error parsing stored user", e);
-        }
+        } catch {}
       }
     }
   }, []);
 
-  const [form, setForm] = useState<FormCliente>({
-    fullName: "",
-    email: "",
-    phoneNumber: "",
-    birthDate: "",
-    password: "",
-  });
-
-  // ── Fetch ────────────────────────────────────────────────────────────────────
-  const fetchClientes = useCallback(async () => {
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+  const fetchUsuarios = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/users?role=CLIENTE`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+      const res = await fetch(getApiUrl("/api/v1/users"), {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
-      if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+      if (!res.ok) {
+        if (res.status === 401) return; // handled globally
+        throw new Error(`Error ${res.status}: ${res.statusText}`);
+      }
       const json = await res.json();
-      setClientes(json.data ?? []);
+      setUsuarios(json.data ?? []);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Error al cargar clientes");
+      setError(err instanceof Error ? err.message : "Error al cargar usuarios");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchClientes();
-  }, [fetchClientes]);
+  useEffect(() => { fetchUsuarios(); }, [fetchUsuarios]);
 
-  // ── Submit ───────────────────────────────────────────────────────────────────
-  const handleSubmit = async (e: React.FormEvent) => {
+  // ── Create ────────────────────────────────────────────────────────────────
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setFormError(null);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/users`, {
+      const res = await fetch(getApiUrl("/api/v1/users"), {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...form, role: "CLIENTE" }),
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ ...createForm, role: "CLIENTE" }),
       });
       const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.message ?? "Error al registrar cliente");
-      }
-      await fetchClientes();
-      setIsModalOpen(false);
-      setForm({ fullName: "", email: "", phoneNumber: "", birthDate: "", password: "" });
+      if (!res.ok) throw new Error(json.message ?? json.error?.message ?? "Error al registrar");
+      await fetchUsuarios();
+      setShowCreate(false);
+      setCreateForm({ fullName: "", email: "", phoneNumber: "", birthDate: "", password: "" });
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : "Error inesperado");
     } finally {
@@ -202,499 +266,692 @@ function DashboardClientes() {
     }
   };
 
-  // ── Suspend ──────────────────────────────────────────────────────────────────
-  const handleSuspender = async (id: string) => {
+  // ── Edit ──────────────────────────────────────────────────────────────────
+  const openEdit = (u: Usuario) => {
+    setSelectedUser(u);
+    setEditForm({ fullName: u.fullName ?? "", phoneNumber: u.phoneNumber ?? "", role: u.role, isActive: u.isActive });
+    setFormError(null);
+    setShowEdit(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    setSubmitting(true);
+    setFormError(null);
     try {
       const token = localStorage.getItem("token");
-      await fetch(`${API_BASE}/users/${id}`, {
+      const res = await fetch(getApiUrl(`/api/v1/users/${selectedUser.id}`), {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ isActive: false }),
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
       });
-      setClientes((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, isActive: false } : c))
-      );
-    } catch {
-      // silent fail — UI stays consistent
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message ?? json.error?.message ?? "Error al actualizar");
+      setUsuarios(prev => prev.map(u => u.id === selectedUser.id ? { ...u, ...editForm } : u));
+      setShowEdit(false);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Error inesperado");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // ── Filtering & Pagination ───────────────────────────────────────────────────
-  const filtered = clientes.filter((c) => {
+  // ── Suspend / Reactivate ──────────────────────────────────────────────────
+  const handleToggleActive = async (id: string, newActive: boolean) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(getApiUrl(`/api/v1/users/${id}`), {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: newActive }),
+      });
+      if (res.ok) {
+        setUsuarios(prev => prev.map(u => u.id === id ? { ...u, isActive: newActive } : u));
+      }
+    } catch {}
+  };
+
+  // ── Export CSV ────────────────────────────────────────────────────────────
+  const handleExportCSV = () => {
+    const headers = ["ID", "Nombre", "Email", "Teléfono", "Rol", "Estado", "Fecha Nacimiento", "Fecha Registro"];
+    const rows = filtered.map(u => [
+      u.id,
+      u.fullName ?? "",
+      u.email,
+      u.phoneNumber ?? "",
+      u.role,
+      u.isActive ? "Activo" : "Suspendido",
+      u.birthDate ? formatDate(u.birthDate) : "",
+      formatDate(u.createdAt),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `usuarios_bucare_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ── Filtering & Pagination ────────────────────────────────────────────────
+  const filtered = usuarios.filter(u => {
     const term = busqueda.toLowerCase();
     const matchSearch =
-      (c.fullName ?? "").toLowerCase().includes(term) ||
-      c.email.toLowerCase().includes(term) ||
-      (c.phoneNumber ?? "").toLowerCase().includes(term);
+      (u.fullName ?? "").toLowerCase().includes(term) ||
+      u.email.toLowerCase().includes(term) ||
+      (u.phoneNumber ?? "").toLowerCase().includes(term) ||
+      u.role.toLowerCase().includes(term);
     const matchEstado =
-      filtroEstado === "todos"
-        ? true
-        : filtroEstado === "activo"
-        ? c.isActive
-        : !c.isActive;
-    return matchSearch && matchEstado;
+      filtroEstado === "todos" ? true :
+      filtroEstado === "activo" ? u.isActive : !u.isActive;
+    const matchRol = filtroRol === "TODOS" ? true : u.role === filtroRol;
+    return matchSearch && matchEstado && matchRol;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginated = filtered.slice(
-    (pagina - 1) * ITEMS_PER_PAGE,
-    pagina * ITEMS_PER_PAGE
-  );
+  const paginated = filtered.slice((pagina - 1) * ITEMS_PER_PAGE, pagina * ITEMS_PER_PAGE);
 
-  const kpiTotal = clientes.length;
-  const kpiActivos = clientes.filter((c) => c.isActive).length;
-  const kpiInactivos = clientes.filter((c) => !c.isActive).length;
+  const kpiTotal   = usuarios.length;
+  const kpiActivos = usuarios.filter(u => u.isActive).length;
+  const kpiInact   = usuarios.filter(u => !u.isActive).length;
 
   const getInitials = (name?: string, email?: string) => {
-    if (name) {
-      return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase();
-    }
+    if (name) return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
     return (email ?? "?").substring(0, 2).toUpperCase();
   };
 
   const formatDate = (iso: string) => {
     try {
-      return new Date(iso).toLocaleDateString("es-ES", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      return iso;
-    }
+      return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+    } catch { return iso; }
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Access Guard ──────────────────────────────────────────────────────────
   if (!["SUPERADMIN", "ADMIN", "CONTADOR", "VENTAS"].includes(userRole)) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
-        <AlertCircle className="w-16 h-16 text-destructive mb-4" />
-        <h2 className="text-xl font-bold text-primary font-display">Acceso Denegado</h2>
-        <p className="text-sm text-muted-foreground mt-2 max-w-md">
-          No tienes permisos para acceder al Directorio de Clientes. Si necesitas este acceso, por favor contacta al administrador del sistema.
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "64px 16px", textAlign: "center" }}>
+        <AlertCircle size={56} style={{ color: "#e05555", marginBottom: "16px" }} />
+        <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--dash-text)" }}>Acceso Denegado</h2>
+        <p style={{ fontSize: "0.82rem", color: "var(--dash-muted)", marginTop: "8px", maxWidth: "380px" }}>
+          No tienes permisos para acceder al Directorio de Usuarios.
         </p>
       </div>
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  const canManage = ["SUPERADMIN", "ADMIN"].includes(userRole);
+  const canCreate = ["SUPERADMIN", "ADMIN", "VENTAS"].includes(userRole);
+
+  const ROLE_FILTERS: RoleFilter[] = ["TODOS", "CLIENTE", "ADMIN", "VENTAS", "CONTADOR", "PROYECTO", "SUPERADMIN"];
+
   return (
-    <div className="flex flex-col gap-6 pb-12 animate-fade-in">
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingBottom: "48px", animation: "fadeIn 0.3s ease" }}>
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/40 pb-5">
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px", borderBottom: "1px solid var(--dash-border)", paddingBottom: "20px" }}>
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-primary tracking-tight">
-            Gestión de Clientes
+          <h1 style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--dash-text)", fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}>
+            Usuarios
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Directorio completo de clientes registrados en la plataforma.
+          <p style={{ fontSize: "0.78rem", color: "var(--dash-muted)", marginTop: "4px" }}>
+            Directorio completo de usuarios registrados en la plataforma.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchClientes}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+          <button
+            onClick={fetchUsuarios}
             disabled={loading}
-            className="text-xs h-9 bg-white border-border/60 hover:bg-muted/40 shadow-2xs"
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "7px 14px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: 600,
+              background: "var(--dash-card)", border: "1px solid var(--dash-border)",
+              color: "var(--dash-text)", cursor: "pointer",
+            }}
           >
-            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw size={13} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
             Actualizar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs h-9 bg-white border-border/60 hover:bg-muted/40 shadow-2xs"
+          </button>
+          <button
+            onClick={handleExportCSV}
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "7px 14px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: 600,
+              background: "var(--dash-card)", border: "1px solid var(--dash-border)",
+              color: "var(--dash-text)", cursor: "pointer",
+            }}
           >
-            <Download className="mr-1.5 h-3.5 w-3.5" />
+            <Download size={13} />
             Exportar CSV
-          </Button>
-
-          {/* ── New Client Modal ──────────────────────────────────────────── */}
-          {["SUPERADMIN", "ADMIN", "VENTAS"].includes(userRole) && (
-            <Dialog open={isModalOpen} onOpenChange={(o) => { setIsModalOpen(o); setFormError(null); }}>
-              <DialogTrigger asChild>
-                <Button className="bg-primary text-white hover:bg-primary/90 shadow-sm text-xs font-semibold h-9">
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Registrar Cliente
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[460px] bg-white border-border/60">
-              <DialogHeader>
-                <DialogTitle className="text-primary font-display font-bold text-xl">
-                  Registrar Nuevo Cliente
-                </DialogTitle>
-                <DialogDescription className="text-muted-foreground text-sm">
-                  Completa los datos para crear el acceso del cliente en la plataforma.
-                </DialogDescription>
-              </DialogHeader>
-
-              <form onSubmit={handleSubmit}>
-                <div className="grid gap-4 py-4">
-                  {formError && (
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs">
-                      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                      {formError}
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2 grid gap-1.5">
-                      <Label className="text-xs font-semibold text-foreground">
-                        Nombre Completo <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        required
-                        value={form.fullName}
-                        onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                        placeholder="Ej. María García"
-                        className="bg-muted/30 border-border/50 focus-visible:ring-primary text-sm"
-                      />
-                    </div>
-                    <div className="col-span-2 grid gap-1.5">
-                      <Label className="text-xs font-semibold text-foreground">
-                        Correo Electrónico <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        required
-                        type="email"
-                        value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        placeholder="correo@ejemplo.com"
-                        className="bg-muted/30 border-border/50 focus-visible:ring-primary text-sm"
-                      />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs font-semibold text-foreground">Teléfono <span className="text-destructive">*</span></Label>
-                      <Input
-                        required
-                        value={form.phoneNumber}
-                        onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
-                        placeholder="+58 412 1234567"
-                        className="bg-muted/30 border-border/50 focus-visible:ring-primary text-sm"
-                      />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs font-semibold text-foreground">
-                        Fecha Nacimiento <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        required
-                        type="date"
-                        value={form.birthDate}
-                        onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-                        className="bg-muted/30 border-border/50 focus-visible:ring-primary text-sm"
-                      />
-                    </div>
-                    <div className="col-span-2 grid gap-1.5">
-                      <Label className="text-xs font-semibold text-foreground">
-                        Contraseña temporal <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        required
-                        type="password"
-                        minLength={8}
-                        value={form.password}
-                        onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        placeholder="Mínimo 8 caracteres"
-                        className="bg-muted/30 border-border/50 focus-visible:ring-primary text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter className="gap-2 pt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsModalOpen(false)}
-                    className="text-xs h-9"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={submitting}
-                    className="bg-primary hover:bg-primary/90 text-white text-xs h-9 min-w-28"
-                  >
-                    {submitting ? (
-                      <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Guardando...</>
-                    ) : (
-                      "Guardar Cliente"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          </button>
+          {canCreate && (
+            <button
+              onClick={() => { setFormError(null); setShowCreate(true); }}
+              style={{
+                display: "flex", alignItems: "center", gap: "6px",
+                padding: "7px 16px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: 700,
+                background: "var(--dash-accent)", color: "#0D1810", border: "none", cursor: "pointer",
+              }}
+            >
+              <Plus size={14} />
+              Registrar Cliente
+            </button>
           )}
         </div>
       </div>
 
       {/* ── KPI Cards ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiCard label="Total Clientes" value={kpiTotal} icon={Users} color="bg-primary" />
-        <KpiCard label="Clientes Activos" value={kpiActivos} icon={UserCheck} color="bg-emerald-600" />
-        <KpiCard label="Suspendidos" value={kpiInactivos} icon={UserX} color="bg-muted-foreground" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+        <KpiCard label="Total Usuarios" value={kpiTotal}   icon={Users}      accent="#E1B668" />
+        <KpiCard label="Activos"        value={kpiActivos} icon={UserCheck}  accent="#68D391" />
+        <KpiCard label="Suspendidos"    value={kpiInact}   icon={UserX}      accent="#FC8181" />
       </div>
 
       {/* ── Table Card ──────────────────────────────────────────────────────── */}
-      <Card className="bg-white border-border/60 shadow-2xs">
-        <CardHeader className="pb-4 border-b border-border/30">
-          <div className="flex flex-col md:flex-row md:items-center gap-3">
-            {/* Search */}
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, email o teléfono..."
-                value={busqueda}
-                onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }}
-                className="pl-9 bg-muted/30 border-border/50 focus-visible:ring-primary text-sm h-9"
-              />
-            </div>
-
-            {/* Status filter */}
-            <div className="flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5 text-muted-foreground" />
-              {(["todos", "activo", "inactivo"] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => { setFiltroEstado(f); setPagina(1); }}
-                  className={`text-[11px] font-medium px-3 py-1.5 rounded-full border transition-all capitalize ${
-                    filtroEstado === f
-                      ? "bg-primary text-white border-primary"
-                      : "bg-white border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                  }`}
-                >
-                  {f === "todos" ? "Todos" : f === "activo" ? "Activos" : "Suspendidos"}
-                </button>
-              ))}
-            </div>
+      <div style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)", borderRadius: "16px", overflow: "hidden" }}>
+        {/* Filters */}
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--dash-border)", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+          {/* Search */}
+          <div style={{ position: "relative", flex: "1", minWidth: "200px", maxWidth: "320px" }}>
+            <Search size={14} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--dash-muted)" }} />
+            <input
+              placeholder="Buscar por nombre, email, teléfono, rol..."
+              value={busqueda}
+              onChange={e => { setBusqueda(e.target.value); setPagina(1); }}
+              style={{
+                width: "100%", paddingLeft: "34px", paddingRight: "12px", paddingTop: "8px", paddingBottom: "8px",
+                borderRadius: "10px", fontSize: "0.78rem",
+                background: "rgba(255,255,255,0.04)", border: "1px solid var(--dash-border)",
+                color: "var(--dash-text)", outline: "none",
+              }}
+            />
           </div>
-        </CardHeader>
 
-        <CardContent className="p-0">
-          {/* Loading State */}
-          {loading && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <p className="text-sm text-muted-foreground">Cargando clientes...</p>
-            </div>
-          )}
+          {/* Status filter */}
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {(["todos", "activo", "inactivo"] as StatusFilter[]).map(f => (
+              <button
+                key={f}
+                onClick={() => { setFiltroEstado(f); setPagina(1); }}
+                style={{
+                  padding: "5px 12px", borderRadius: "99px", fontSize: "0.7rem", fontWeight: 600, cursor: "pointer",
+                  background: filtroEstado === f ? "var(--dash-accent)" : "transparent",
+                  color: filtroEstado === f ? "#0D1810" : "var(--dash-muted)",
+                  border: filtroEstado === f ? "1px solid transparent" : "1px solid var(--dash-border)",
+                }}
+              >
+                {f === "todos" ? "Todos" : f === "activo" ? "Activos" : "Suspendidos"}
+              </button>
+            ))}
+          </div>
 
-          {/* Error State */}
-          {!loading && error && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <AlertCircle className="w-8 h-8 text-destructive/70" />
-              <p className="text-sm font-medium text-foreground">No se pudo cargar el directorio</p>
-              <p className="text-xs text-muted-foreground">{error}</p>
-              <Button size="sm" onClick={fetchClientes} className="mt-2 text-xs h-8 bg-primary text-white hover:bg-primary/90">
-                <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Reintentar
-              </Button>
-            </div>
-          )}
+          {/* Role filter */}
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {ROLE_FILTERS.map(r => (
+              <button
+                key={r}
+                onClick={() => { setFiltroRol(r); setPagina(1); }}
+                style={{
+                  padding: "5px 10px", borderRadius: "99px", fontSize: "0.65rem", fontWeight: 700, cursor: "pointer",
+                  letterSpacing: "0.05em",
+                  background: filtroRol === r ? "rgba(225,182,104,0.18)" : "transparent",
+                  color: filtroRol === r ? "#E1B668" : "var(--dash-muted)",
+                  border: filtroRol === r ? "1px solid rgba(225,182,104,0.35)" : "1px solid var(--dash-border)",
+                }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* Empty State */}
-          {!loading && !error && filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Users className="w-10 h-10 text-muted-foreground/40" />
-              <p className="text-sm font-medium text-foreground">
-                {busqueda ? "Sin resultados para tu búsqueda" : "Aún no hay clientes registrados"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {busqueda ? "Intenta con otro término" : "Usa el botón Registrar Cliente para agregar el primero"}
-              </p>
-            </div>
-          )}
+        {/* Loading */}
+        {loading && (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "rgba(255,255,255,0.02)" }}>
+                {["Usuario","Contacto","Rol","Nacimiento","Registro","Estado",""].map(h => (
+                  <th key={h} style={{ padding: "10px 16px", fontSize: "0.62rem", fontWeight: 700, color: "var(--dash-muted)", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: h ? "left" : "right" }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[1,2,3,4,5].map(i => <SkeletonRow key={i} />)}
+            </tbody>
+          </table>
+        )}
 
-          {/* Table */}
-          {!loading && !error && filtered.length > 0 && (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-muted/20 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    <tr>
-                      <th className="py-3 px-6">Cliente</th>
-                      <th className="py-3 px-6">Contacto</th>
-                      <th className="py-3 px-6">Nacimiento</th>
-                      <th className="py-3 px-6">Registro</th>
-                      <th className="py-3 px-6">Estado</th>
-                      <th className="py-3 px-6 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/40">
-                    {paginated.map((cliente) => (
-                      <tr
-                        key={cliente.id}
-                        className="hover:bg-muted/10 transition-colors group"
-                      >
-                        {/* Name + Avatar */}
-                        <td className="py-3.5 px-6">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 border border-primary/20 shrink-0">
-                              <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                                {getInitials(cliente.fullName, cliente.email)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-semibold text-foreground text-sm group-hover:text-primary transition-colors leading-tight">
-                                {cliente.fullName ?? "Sin nombre"}
-                              </p>
-                              <p className="text-[11px] text-muted-foreground mt-0.5">
-                                ID: {cliente.id.substring(0, 8)}…
-                              </p>
-                            </div>
+        {/* Error */}
+        {!loading && error && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "48px 16px", textAlign: "center" }}>
+            <AlertCircle size={36} style={{ color: "#e05555" }} />
+            <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--dash-text)" }}>No se pudo cargar el directorio</p>
+            <p style={{ fontSize: "0.75rem", color: "var(--dash-muted)" }}>{error}</p>
+            <button onClick={fetchUsuarios} style={{ padding: "8px 20px", borderRadius: "10px", background: "#e05555", color: "#fff", border: "none", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <RefreshCw size={13} /> Reintentar
+            </button>
+          </div>
+        )}
+
+        {/* Empty */}
+        {!loading && !error && filtered.length === 0 && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "64px 16px", textAlign: "center" }}>
+            <Users size={40} style={{ color: "var(--dash-muted)", opacity: 0.4 }} />
+            <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--dash-text)" }}>
+              {busqueda ? "Sin resultados para tu búsqueda" : "Aún no hay usuarios registrados"}
+            </p>
+            <p style={{ fontSize: "0.75rem", color: "var(--dash-muted)" }}>
+              {busqueda ? "Intenta con otro término o cambia los filtros" : "Usa el botón Registrar Cliente para agregar el primero"}
+            </p>
+          </div>
+        )}
+
+        {/* Table */}
+        {!loading && !error && filtered.length > 0 && (
+          <>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
+                <thead>
+                  <tr style={{ background: "rgba(255,255,255,0.02)" }}>
+                    {["Usuario","Contacto","Rol","Nacimiento","Registro","Estado","Acciones"].map(h => (
+                      <th key={h} style={{ padding: "10px 16px", fontSize: "0.62rem", fontWeight: 700, color: "var(--dash-muted)", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: h === "Acciones" ? "right" : "left", whiteSpace: "nowrap" }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginated.map(u => (
+                    <tr
+                      key={u.id}
+                      style={{ borderTop: "1px solid var(--dash-border)", transition: "background 0.15s" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.025)")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    >
+                      {/* Avatar + Name */}
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{
+                            width: "36px", height: "36px", borderRadius: "50%",
+                            background: "var(--dash-accent-dim)",
+                            border: "1px solid var(--dash-border-hover)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: "0.7rem", fontWeight: 800, color: "var(--dash-accent)",
+                            flexShrink: 0,
+                          }}>
+                            {getInitials(u.fullName, u.email)}
                           </div>
-                        </td>
+                          <div>
+                            <p style={{ fontWeight: 600, color: "var(--dash-text)", fontSize: "0.8rem" }}>{u.fullName ?? "Sin nombre"}</p>
+                            <p style={{ fontSize: "0.65rem", color: "var(--dash-muted)", marginTop: "2px" }}>
+                              ID: {u.id.substring(0, 8)}…
+                            </p>
+                          </div>
+                        </div>
+                      </td>
 
-                        {/* Contact */}
-                        <td className="py-3.5 px-6">
-                          <div className="flex flex-col gap-1">
-                            <span className="flex items-center text-xs text-muted-foreground">
-                              <Mail className="w-3 h-3 mr-1.5 shrink-0" />
-                              {cliente.email}
+                      {/* Contact */}
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.73rem", color: "var(--dash-muted)" }}>
+                            <Mail size={11} /> {u.email}
+                          </span>
+                          {u.phoneNumber && (
+                            <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.73rem", color: "var(--dash-muted)" }}>
+                              <Phone size={11} /> {u.phoneNumber}
                             </span>
-                            {cliente.phoneNumber && (
-                              <span className="flex items-center text-xs text-muted-foreground">
-                                <Phone className="w-3 h-3 mr-1.5 shrink-0" />
-                                {cliente.phoneNumber}
-                              </span>
-                            )}
-                          </div>
-                        </td>
+                          )}
+                        </div>
+                      </td>
 
-                        {/* Birth Date */}
-                        <td className="py-3.5 px-6">
-                          <span className="flex items-center text-xs text-muted-foreground">
-                            <CalendarDays className="w-3.5 h-3.5 mr-1.5 opacity-70 shrink-0" />
-                            {cliente.birthDate ? formatDate(cliente.birthDate) : "—"}
-                          </span>
-                        </td>
+                      {/* Role */}
+                      <td style={{ padding: "12px 16px" }}>
+                        <RoleBadge role={u.role} />
+                      </td>
 
-                        {/* Registration Date */}
-                        <td className="py-3.5 px-6">
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(cliente.createdAt)}
-                          </span>
-                        </td>
+                      {/* Birth Date */}
+                      <td style={{ padding: "12px 16px" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.73rem", color: "var(--dash-muted)" }}>
+                          <CalendarDays size={11} />
+                          {u.birthDate ? formatDate(u.birthDate) : "—"}
+                        </span>
+                      </td>
 
-                        {/* Status Badge */}
-                        <td className="py-3.5 px-6">
-                          <Badge
-                            variant="outline"
-                            className={
-                              cliente.isActive
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold text-[11px]"
-                                : "bg-muted/60 text-muted-foreground border-border text-[11px]"
-                            }
-                          >
-                            {cliente.isActive ? "Activo" : "Suspendido"}
-                          </Badge>
-                        </td>
+                      {/* Created At */}
+                      <td style={{ padding: "12px 16px" }}>
+                        <span style={{ fontSize: "0.73rem", color: "var(--dash-muted)" }}>
+                          {formatDate(u.createdAt)}
+                        </span>
+                      </td>
 
-                        {/* Actions */}
-                        <td className="py-3.5 px-6 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      {/* Status */}
+                      <td style={{ padding: "12px 16px" }}>
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: "5px",
+                          padding: "3px 10px", borderRadius: "99px", fontSize: "0.65rem", fontWeight: 700,
+                          background: u.isActive ? "rgba(104,211,145,0.12)" : "rgba(255,255,255,0.05)",
+                          color: u.isActive ? "#68D391" : "var(--dash-muted)",
+                          border: `1px solid ${u.isActive ? "rgba(104,211,145,0.25)" : "rgba(255,255,255,0.08)"}`,
+                        }}>
+                          {u.isActive ? <CheckCircle2 size={10} /> : <X size={10} />}
+                          {u.isActive ? "Activo" : "Suspendido"}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button style={{ padding: "6px", borderRadius: "8px", background: "transparent", border: "1px solid var(--dash-border)", cursor: "pointer", color: "var(--dash-muted)", display: "inline-flex", alignItems: "center" }}>
+                              <MoreVertical size={14} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)", color: "var(--dash-text)", minWidth: "160px" }}>
+                            <DropdownMenuLabel style={{ fontSize: "0.65rem", color: "var(--dash-muted)" }}>Opciones</DropdownMenuLabel>
+                            <DropdownMenuSeparator style={{ background: "var(--dash-border)" }} />
+                            <DropdownMenuItem
+                              onClick={() => { setSelectedUser(u); setShowDetail(true); }}
+                              style={{ fontSize: "0.78rem", cursor: "pointer", gap: "8px", color: "var(--dash-text)" }}
+                            >
+                              <Eye size={13} style={{ color: "var(--dash-accent)" }} /> Ver Detalle
+                            </DropdownMenuItem>
+                            {canManage && (
+                              <DropdownMenuItem
+                                onClick={() => openEdit(u)}
+                                style={{ fontSize: "0.78rem", cursor: "pointer", gap: "8px", color: "var(--dash-text)" }}
                               >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-white border-border/60 w-40">
-                              <DropdownMenuLabel className="text-[11px] text-muted-foreground">
-                                Opciones
-                              </DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-xs cursor-pointer gap-2">
-                                <Eye className="w-3.5 h-3.5 text-primary" />
-                                Ver Detalle
+                                <Pencil size={13} style={{ color: "var(--dash-accent)" }} /> Editar
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-xs cursor-pointer gap-2">
-                                <Pencil className="w-3.5 h-3.5 text-primary" />
-                                Editar
+                            )}
+                            {canManage && u.isActive && (
+                              <DropdownMenuItem
+                                onClick={() => handleToggleActive(u.id, false)}
+                                style={{ fontSize: "0.78rem", cursor: "pointer", gap: "8px", color: "#FC8181" }}
+                              >
+                                <Ban size={13} /> Suspender
                               </DropdownMenuItem>
-                              {cliente.isActive && ["SUPERADMIN", "ADMIN"].includes(userRole) && (
-                                <DropdownMenuItem
-                                  className="text-xs cursor-pointer gap-2 text-destructive focus:text-destructive"
-                                  onClick={() => handleSuspender(cliente.id)}
-                                >
-                                  <Ban className="w-3.5 h-3.5" />
-                                  Suspender
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                            )}
+                            {canManage && !u.isActive && (
+                              <DropdownMenuItem
+                                onClick={() => handleToggleActive(u.id, true)}
+                                style={{ fontSize: "0.78rem", cursor: "pointer", gap: "8px", color: "#68D391" }}
+                              >
+                                <CheckCircle2 size={13} /> Reactivar
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-              {/* ── Pagination ──────────────────────────────────────────────── */}
-              <div className="flex items-center justify-between px-6 py-3 border-t border-border/40 bg-muted/10">
-                <p className="text-xs text-muted-foreground">
-                  Mostrando{" "}
-                  <span className="font-semibold text-foreground">
-                    {(pagina - 1) * ITEMS_PER_PAGE + 1}–
-                    {Math.min(pagina * ITEMS_PER_PAGE, filtered.length)}
-                  </span>{" "}
-                  de{" "}
-                  <span className="font-semibold text-foreground">{filtered.length}</span>{" "}
-                  clientes
-                </p>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7 border-border/60"
-                    onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                    disabled={pagina === 1}
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </Button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - pagina) <= 1)
-                    .map((p, idx, arr) => (
-                      <>
-                        {idx > 0 && arr[idx - 1] !== p - 1 && (
-                          <span key={`ellipsis-${p}`} className="text-xs text-muted-foreground px-1">…</span>
-                        )}
-                        <Button
-                          key={p}
-                          variant={p === pagina ? "default" : "outline"}
-                          size="icon"
-                          className={`h-7 w-7 text-xs ${p === pagina ? "bg-primary text-white border-primary" : "border-border/60"}`}
-                          onClick={() => setPagina(p)}
-                        >
-                          {p}
-                        </Button>
-                      </>
+            {/* Pagination */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderTop: "1px solid var(--dash-border)", background: "rgba(255,255,255,0.01)" }}>
+              <p style={{ fontSize: "0.72rem", color: "var(--dash-muted)" }}>
+                Mostrando <strong style={{ color: "var(--dash-text)" }}>{(pagina - 1) * ITEMS_PER_PAGE + 1}–{Math.min(pagina * ITEMS_PER_PAGE, filtered.length)}</strong> de <strong style={{ color: "var(--dash-text)" }}>{filtered.length}</strong> usuarios
+              </p>
+              <div style={{ display: "flex", gap: "4px" }}>
+                <button
+                  onClick={() => setPagina(p => Math.max(1, p - 1))}
+                  disabled={pagina === 1}
+                  style={{ width: "28px", height: "28px", borderRadius: "8px", background: "var(--dash-card)", border: "1px solid var(--dash-border)", color: "var(--dash-text)", cursor: pagina === 1 ? "not-allowed" : "pointer", opacity: pagina === 1 ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <ChevronLeft size={13} />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - pagina) <= 1)
+                  .map((p, idx, arr) => (
+                    <span key={p}>
+                      {idx > 0 && arr[idx-1] !== p - 1 && (
+                        <span style={{ fontSize: "0.7rem", color: "var(--dash-muted)", padding: "0 4px", display: "inline-flex", alignItems: "center" }}>…</span>
+                      )}
+                      <button
+                        onClick={() => setPagina(p)}
+                        style={{
+                          width: "28px", height: "28px", borderRadius: "8px", fontSize: "0.72rem", fontWeight: 700,
+                          background: p === pagina ? "var(--dash-accent)" : "var(--dash-card)",
+                          color: p === pagina ? "#0D1810" : "var(--dash-text)",
+                          border: `1px solid ${p === pagina ? "transparent" : "var(--dash-border)"}`,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {p}
+                      </button>
+                    </span>
+                  ))}
+                <button
+                  onClick={() => setPagina(p => Math.min(totalPages, p + 1))}
+                  disabled={pagina === totalPages}
+                  style={{ width: "28px", height: "28px", borderRadius: "8px", background: "var(--dash-card)", border: "1px solid var(--dash-border)", color: "var(--dash-text)", cursor: pagina === totalPages ? "not-allowed" : "pointer", opacity: pagina === totalPages ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <ChevronRight size={13} />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Modal: Crear Usuario ────────────────────────────────────────────── */}
+      <Dialog open={showCreate} onOpenChange={o => { setShowCreate(o); setFormError(null); }}>
+        <DialogContent className="sm:max-w-[460px]" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: "var(--dash-text)", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Plus size={18} style={{ color: "var(--dash-accent)" }} /> Registrar Nuevo Cliente
+            </DialogTitle>
+            <DialogDescription style={{ color: "var(--dash-muted)" }}>
+              Completa los datos para crear el acceso del cliente en la plataforma.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreate}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "8px 0" }}>
+              {formError && (
+                <div style={{ display: "flex", gap: "8px", alignItems: "flex-start", padding: "10px 12px", borderRadius: "10px", background: "rgba(224,85,85,0.08)", border: "1px solid rgba(224,85,85,0.2)", color: "#FC8181", fontSize: "0.75rem" }}>
+                  <AlertCircle size={14} style={{ flexShrink: 0, marginTop: "1px" }} /> {formError}
+                </div>
+              )}
+              <FormField label="Nombre Completo *">
+                <input required value={createForm.fullName} onChange={e => setCreateForm(f => ({ ...f, fullName: e.target.value }))} placeholder="Ej. María García" style={inputStyle} />
+              </FormField>
+              <FormField label="Correo Electrónico *">
+                <input required type="email" value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} placeholder="correo@ejemplo.com" style={inputStyle} />
+              </FormField>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <FormField label="Teléfono *">
+                  <input required value={createForm.phoneNumber} onChange={e => setCreateForm(f => ({ ...f, phoneNumber: e.target.value }))} placeholder="+58 412 1234567" style={inputStyle} />
+                </FormField>
+                <FormField label="Fecha Nacimiento *">
+                  <input required type="date" value={createForm.birthDate} onChange={e => setCreateForm(f => ({ ...f, birthDate: e.target.value }))} style={inputStyle} />
+                </FormField>
+              </div>
+              <FormField label="Contraseña temporal *">
+                <input required type="password" minLength={8} value={createForm.password} onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))} placeholder="Mínimo 8 caracteres" style={inputStyle} />
+              </FormField>
+            </div>
+            <DialogFooter style={{ paddingTop: "16px", borderTop: "1px solid var(--dash-border)", gap: "8px" }}>
+              <button type="button" onClick={() => setShowCreate(false)} style={{ ...btnGhost }}>Cancelar</button>
+              <button type="submit" disabled={submitting} style={{ ...btnAccent }}>
+                {submitting ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Guardando…</> : "Guardar Cliente"}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal: Editar Usuario ───────────────────────────────────────────── */}
+      <Dialog open={showEdit} onOpenChange={o => { setShowEdit(o); setFormError(null); }}>
+        <DialogContent className="sm:max-w-[420px]" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: "var(--dash-text)", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Pencil size={16} style={{ color: "var(--dash-accent)" }} /> Editar Usuario
+            </DialogTitle>
+            <DialogDescription style={{ color: "var(--dash-muted)", fontSize: "0.75rem" }}>
+              {selectedUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEdit}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "8px 0" }}>
+              {formError && (
+                <div style={{ display: "flex", gap: "8px", alignItems: "flex-start", padding: "10px 12px", borderRadius: "10px", background: "rgba(224,85,85,0.08)", border: "1px solid rgba(224,85,85,0.2)", color: "#FC8181", fontSize: "0.75rem" }}>
+                  <AlertCircle size={14} style={{ flexShrink: 0, marginTop: "1px" }} /> {formError}
+                </div>
+              )}
+              <FormField label="Nombre Completo">
+                <input value={editForm.fullName} onChange={e => setEditForm(f => ({ ...f, fullName: e.target.value }))} placeholder="Nombre completo" style={inputStyle} />
+              </FormField>
+              <FormField label="Teléfono">
+                <input value={editForm.phoneNumber} onChange={e => setEditForm(f => ({ ...f, phoneNumber: e.target.value }))} placeholder="+58 412 1234567" style={inputStyle} />
+              </FormField>
+              {userRole === "SUPERADMIN" && (
+                <FormField label="Rol">
+                  <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
+                    {["CLIENTE","VENTAS","CONTADOR","PROYECTO","ADMIN","SUPERADMIN"].map(r => (
+                      <option key={r} value={r}>{r}</option>
                     ))}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7 border-border/60"
-                    onClick={() => setPagina((p) => Math.min(totalPages, p + 1))}
-                    disabled={pagina === totalPages}
-                  >
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
+                  </select>
+                </FormField>
+              )}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: "10px", background: "rgba(255,255,255,0.02)", border: "1px solid var(--dash-border)" }}>
+                <div>
+                  <p style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--dash-text)" }}>Estado de cuenta</p>
+                  <p style={{ fontSize: "0.65rem", color: "var(--dash-muted)", marginTop: "2px" }}>Suspender deshabilitará el acceso del usuario</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditForm(f => ({ ...f, isActive: !f.isActive }))}
+                  style={{
+                    width: "42px", height: "24px", borderRadius: "99px", border: "none", cursor: "pointer",
+                    background: editForm.isActive ? "var(--dash-accent)" : "rgba(255,255,255,0.1)",
+                    position: "relative", transition: "background 0.2s",
+                  }}
+                >
+                  <span style={{
+                    position: "absolute", top: "3px",
+                    left: editForm.isActive ? "21px" : "3px",
+                    width: "18px", height: "18px", borderRadius: "50%",
+                    background: editForm.isActive ? "#0D1810" : "var(--dash-muted)",
+                    transition: "left 0.2s",
+                  }} />
+                </button>
+              </div>
+            </div>
+            <DialogFooter style={{ paddingTop: "16px", borderTop: "1px solid var(--dash-border)", gap: "8px" }}>
+              <button type="button" onClick={() => setShowEdit(false)} style={{ ...btnGhost }}>Cancelar</button>
+              <button type="submit" disabled={submitting} style={{ ...btnAccent }}>
+                {submitting ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Guardando…</> : "Guardar Cambios"}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal: Ver Detalle ──────────────────────────────────────────────── */}
+      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+        <DialogContent className="sm:max-w-[420px]" style={{ background: "var(--dash-sidebar)", borderColor: "var(--dash-border)", color: "var(--dash-text)" }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: "var(--dash-text)", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Eye size={16} style={{ color: "var(--dash-accent)" }} /> Detalle de Usuario
+            </DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+              {/* Avatar */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "20px 0 24px" }}>
+                <div style={{
+                  width: "64px", height: "64px", borderRadius: "50%",
+                  background: "var(--dash-accent-dim)", border: "2px solid var(--dash-border-hover)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "1.4rem", fontWeight: 800, color: "var(--dash-accent)",
+                }}>
+                  {getInitials(selectedUser.fullName, selectedUser.email)}
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ fontWeight: 700, fontSize: "1rem", color: "var(--dash-text)" }}>{selectedUser.fullName ?? "Sin nombre"}</p>
+                  <p style={{ fontSize: "0.75rem", color: "var(--dash-muted)", marginTop: "2px" }}>{selectedUser.email}</p>
+                  <div style={{ marginTop: "8px", display: "flex", gap: "8px", justifyContent: "center" }}>
+                    <RoleBadge role={selectedUser.role} />
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: "4px",
+                      padding: "2px 9px", borderRadius: "99px", fontSize: "0.6rem", fontWeight: 700,
+                      background: selectedUser.isActive ? "rgba(104,211,145,0.12)" : "rgba(255,255,255,0.05)",
+                      color: selectedUser.isActive ? "#68D391" : "var(--dash-muted)",
+                      border: `1px solid ${selectedUser.isActive ? "rgba(104,211,145,0.25)" : "rgba(255,255,255,0.08)"}`,
+                    }}>
+                      {selectedUser.isActive ? <CheckCircle2 size={9} /> : <X size={9} />}
+                      {selectedUser.isActive ? "Activo" : "Suspendido"}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </>
+
+              {/* Detail rows */}
+              <div style={{ borderTop: "1px solid var(--dash-border)" }}>
+                {[
+                  { icon: ShieldCheck,   label: "ID",             value: selectedUser.id },
+                  { icon: Mail,          label: "Correo",         value: selectedUser.email },
+                  { icon: Phone,         label: "Teléfono",       value: selectedUser.phoneNumber ?? "—" },
+                  { icon: CalendarDays,  label: "Nacimiento",     value: selectedUser.birthDate ? formatDate(selectedUser.birthDate) : "—" },
+                  { icon: CalendarDays,  label: "Registro",       value: formatDate(selectedUser.createdAt) },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 4px", borderBottom: "1px solid var(--dash-border)" }}>
+                    <Icon size={14} style={{ color: "var(--dash-accent)", flexShrink: 0 }} />
+                    <span style={{ fontSize: "0.7rem", color: "var(--dash-muted)", width: "80px", flexShrink: 0 }}>{label}</span>
+                    <span style={{ fontSize: "0.75rem", color: "var(--dash-text)", wordBreak: "break-all" }}>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
-        </CardContent>
-      </Card>
+          <DialogFooter>
+            <button onClick={() => setShowDetail(false)} style={{ ...btnGhost }}>Cerrar</button>
+            {canManage && selectedUser && (
+              <button onClick={() => { setShowDetail(false); openEdit(selectedUser); }} style={{ ...btnAccent }}>
+                <Pencil size={13} /> Editar
+              </button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+      <label style={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--dash-muted)", letterSpacing: "0.04em" }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "8px 12px",
+  borderRadius: "10px",
+  fontSize: "0.8rem",
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid var(--dash-border)",
+  color: "var(--dash-text)",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const btnAccent: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: "6px",
+  padding: "8px 18px", borderRadius: "10px", fontSize: "0.78rem", fontWeight: 700,
+  background: "var(--dash-accent)", color: "#0D1810", border: "none", cursor: "pointer",
+};
+
+const btnGhost: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: "6px",
+  padding: "8px 16px", borderRadius: "10px", fontSize: "0.78rem", fontWeight: 600,
+  background: "transparent", color: "var(--dash-muted)", border: "1px solid var(--dash-border)", cursor: "pointer",
+};

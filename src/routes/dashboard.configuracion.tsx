@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
+import { getApiUrl } from "@/lib/api";
 import {
   Search,
   Plus,
@@ -28,6 +29,7 @@ import {
   ArrowRight,
   LayoutDashboard,
   Share2,
+  Bell,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -150,6 +152,224 @@ export function DashboardConfiguracion() {
   const [siteForm, setSiteForm] = useState<SiteContentData>(DEFAULT_SITE_CONTENT);
   const [savingPortal, setSavingPortal] = useState(false);
   const [portalSuccess, setPortalSuccess] = useState<string | null>(null);
+  const [savingTheme, setSavingTheme] = useState(false);
+  const [themeSuccess, setThemeSuccess] = useState<string | null>(null);
+
+  // --- Estados de Notificaciones Push ---
+  const [notificationsSupported, setNotificationsSupported] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [subscription, setSubscription] = useState<PushSubscription | null>(null);
+  const [testTitle, setTestTitle] = useState("Mensaje de Bucare");
+  const [testMessage, setTestMessage] = useState("Tu cita ha sido confirmada con éxito.");
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testSuccess, setTestSuccess] = useState<string | null>(null);
+
+  // --- Configuración de Eventos de Notificaciones ---
+  interface EventSetting {
+    event: string;
+    enabled: boolean;
+    roles: string;
+  }
+  const [eventSettings, setEventSettings] = useState<EventSetting[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [savingEvents, setSavingEvents] = useState(false);
+  const [eventsSuccess, setEventsSuccess] = useState<string | null>(null);
+
+  const fetchEventSettings = async () => {
+    setLoadingEvents(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(getApiUrl("/api/v1/notifications/settings"), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setEventSettings(json.data);
+        }
+      }
+    } catch (e) {
+      console.error("Error al obtener config de eventos:", e);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const handleSaveEventSettings = async () => {
+    setSavingEvents(true);
+    setEventsSuccess(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(getApiUrl("/api/v1/notifications/settings"), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ settings: eventSettings })
+      });
+      if (res.ok) {
+        setEventsSuccess("Configuración de notificaciones guardada con éxito.");
+        setTimeout(() => setEventsSuccess(null), 4000);
+      } else {
+        throw new Error("No se pudo guardar la configuración");
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    } finally {
+      setSavingEvents(false);
+    }
+  };
+
+  const handleToggleEvent = (event: string, enabled: boolean) => {
+    setEventSettings(prev => prev.map(s => s.event === event ? { ...s, enabled } : s));
+  };
+
+  const handleToggleEventRole = (event: string, role: string) => {
+    setEventSettings(prev => prev.map(s => {
+      if (s.event !== event) return s;
+      const rolesArr = s.roles.split(",").map(r => r.trim()).filter(Boolean);
+      const idx = rolesArr.indexOf(role);
+      if (idx > -1) {
+        rolesArr.splice(idx, 1);
+      } else {
+        rolesArr.push(role);
+      }
+      return { ...s, roles: rolesArr.join(",") };
+    }));
+  };
+
+  useEffect(() => {
+    fetchEventSettings();
+  }, []);
+
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const supported = "serviceWorker" in navigator && "PushManager" in window;
+      setNotificationsSupported(supported);
+      if (supported) {
+        if (Notification.permission === "granted") {
+          navigator.serviceWorker.ready.then(async (reg) => {
+            const sub = await reg.pushManager.getSubscription();
+            if (sub) {
+              setSubscription(sub);
+              setNotificationsEnabled(true);
+            }
+          });
+        }
+      }
+    }
+  }, []);
+
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/\-/g, '+')
+      .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  const handleToggleNotifications = async () => {
+    if (!notificationsSupported) return;
+
+    if (notificationsEnabled) {
+      if (subscription) {
+        const token = localStorage.getItem("token");
+        await fetch(getApiUrl("/api/v1/notifications/unsubscribe"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ endpoint: subscription.endpoint })
+        }).catch((err) => console.error("Error al desuscribir del servidor:", err));
+
+        await subscription.unsubscribe();
+        setSubscription(null);
+      }
+      setNotificationsEnabled(false);
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        alert("Permiso de notificaciones denegado.");
+        return;
+      }
+
+      const res = await fetch(getApiUrl("/api/v1/notifications/vapid-public-key"));
+      if (!res.ok) throw new Error("No se pudo obtener la clave VAPID");
+      const json = await res.json();
+      const vapidPublicKey = json.publicKey;
+
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+      });
+
+      const token = localStorage.getItem("token");
+      const subJSON = sub.toJSON();
+
+      const subRes = await fetch(getApiUrl("/api/v1/notifications/subscribe"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          endpoint: subJSON.endpoint,
+          keys: subJSON.keys
+        })
+      });
+
+      if (!subRes.ok) throw new Error("No se pudo registrar la suscripción en el servidor");
+
+      setSubscription(sub);
+      setNotificationsEnabled(true);
+    } catch (e: any) {
+      console.error("Error al suscribirse a notificaciones:", e);
+      alert("Error al activar notificaciones: " + e.message);
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    if (!subscription) return;
+    setSendingTest(true);
+    setTestSuccess(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(getApiUrl("/api/v1/notifications/test"), {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subscription,
+          title: testTitle,
+          body: testMessage
+        })
+      });
+      if (res.ok) {
+        setTestSuccess("¡Notificación enviada!");
+        setTimeout(() => setTestSuccess(null), 5000);
+      } else {
+        throw new Error("Error en el servidor");
+      }
+    } catch (e: any) {
+      alert("Error al enviar la prueba: " + e.message);
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   useEffect(() => {
     if (fetchedContent) {
@@ -174,7 +394,7 @@ export function DashboardConfiguracion() {
   const saveSectionData = async (section: keyof SiteContentData, dataToSave: any) => {
     try {
       const token = localStorage.getItem("token");
-      await fetch("/api/v1/site-content", {
+      await fetch(getApiUrl("/api/v1/site-content"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -257,7 +477,7 @@ export function DashboardConfiguracion() {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/v1/users", {
+      const res = await fetch(getApiUrl("/api/v1/users"), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -302,6 +522,22 @@ export function DashboardConfiguracion() {
     }
   };
 
+  // Manejador Guardar Configuración de Diseño y Temas
+  const handleSaveTheme = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingTheme(true);
+    setThemeSuccess(null);
+
+    try {
+      await saveSectionData("theme" as any, siteForm.theme);
+      setSavingTheme(false);
+      setThemeSuccess("¡Tema y tipografía guardados correctamente!");
+      setTimeout(() => setThemeSuccess(null), 4000);
+    } catch (err) {
+      setSavingTheme(false);
+    }
+  };
+
 
   // Manejadores de Usuarios
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -311,7 +547,7 @@ export function DashboardConfiguracion() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/v1/users", {
+      const res = await fetch(getApiUrl("/api/v1/users"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -356,7 +592,7 @@ export function DashboardConfiguracion() {
     setEditLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/v1/users/${selectedUser.id}`, {
+      const res = await fetch(getApiUrl(`/api/v1/users/${selectedUser.id}`), {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -386,7 +622,7 @@ export function DashboardConfiguracion() {
   const handleToggleStatus = async (user: UserItem) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/v1/users/${user.id}`, {
+      const res = await fetch(getApiUrl(`/api/v1/users/${user.id}`), {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -429,9 +665,9 @@ export function DashboardConfiguracion() {
   const adminUsersCount = users.filter((u) => ["SUPERADMIN", "ADMIN"].includes(u.role)).length;
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-4 md:space-y-6 pb-12">
       {/* Header de la sección */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <h1
@@ -461,20 +697,32 @@ export function DashboardConfiguracion() {
       {/* Tabs Principales */}
       <Tabs defaultValue="general" className="w-full space-y-4">
         <TabsList
-          className="p-1 rounded-xl flex flex-wrap"
+          className="p-1 rounded-xl w-full grid grid-cols-2 md:grid-cols-6 h-auto"
           style={{ background: "var(--dash-sidebar)", border: "1px solid var(--dash-border)" }}
         >
-          <TabsTrigger value="general" className="gap-2 text-xs font-medium">
-            <SlidersHorizontal size={14} /> General & Proyecto
+          <TabsTrigger value="general" className="gap-1.5 text-[11px] font-medium py-2 h-auto">
+            <SlidersHorizontal size={13} />
+            <span className="truncate">General</span>
           </TabsTrigger>
-          <TabsTrigger value="portal" className="gap-2 text-xs font-medium">
-            <Globe size={14} /> Imágenes & Portal Público
+          <TabsTrigger value="theme" className="gap-1.5 text-[11px] font-medium py-2 h-auto">
+            <SlidersHorizontal size={13} className="text-accent" />
+            <span className="truncate">Diseño & Estilos</span>
           </TabsTrigger>
-          <TabsTrigger value="usuarios" className="gap-2 text-xs font-medium">
-            <Users size={14} /> Usuarios y Roles
+          <TabsTrigger value="portal" className="gap-1.5 text-[11px] font-medium py-2 h-auto">
+            <Globe size={13} />
+            <span className="truncate">Portal</span>
           </TabsTrigger>
-          <TabsTrigger value="matriz" className="gap-2 text-xs font-medium">
-            <ShieldCheck size={14} /> Matriz de Permisos
+          <TabsTrigger value="usuarios" className="gap-1.5 text-[11px] font-medium py-2 h-auto">
+            <Users size={13} />
+            <span className="truncate">Usuarios</span>
+          </TabsTrigger>
+          <TabsTrigger value="matriz" className="gap-1.5 text-[11px] font-medium py-2 h-auto">
+            <ShieldCheck size={13} />
+            <span className="truncate">Permisos</span>
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-1.5 text-[11px] font-medium py-2 h-auto">
+            <Bell size={13} />
+            <span className="truncate">Notificaciones</span>
           </TabsTrigger>
         </TabsList>
 
@@ -648,11 +896,389 @@ export function DashboardConfiguracion() {
               <Button
                 type="submit"
                 disabled={savingSettings}
-                className="gap-2 font-semibold shadow-lg"
+                className="gap-2 font-semibold shadow-lg w-full sm:w-auto"
                 style={{ background: "var(--dash-accent)", color: "#0D1810", border: "none" }}
               >
                 {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
                 Guardar Configuración General
+              </Button>
+            </div>
+          </form>
+        </TabsContent>
+
+        {/* ── Pestaña Nueva: Personalización de Colores & Diseño ── */}
+        <TabsContent value="theme" className="space-y-6">
+          <form onSubmit={handleSaveTheme} className="space-y-6">
+            {themeSuccess && (
+              <div
+                className="p-3.5 rounded-xl flex items-center gap-2.5 text-xs font-semibold animate-fade-in"
+                style={{
+                  background: "rgba(34,197,94,0.15)",
+                  border: "1px solid rgba(34,197,94,0.3)",
+                  color: "#22c55e",
+                }}
+              >
+                <CheckCircle2 size={16} /> {themeSuccess}
+              </div>
+            )}
+
+            {/* Presets Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {[
+                {
+                  id: "warm",
+                  name: "Bucare Warm (Original)",
+                  desc: "Fusión de verdes y tonos arena cálidos.",
+                  theme: {
+                    primaryColor: "#213B26",
+                    accentColor: "#E1B668",
+                    titleColor: "#213B26",
+                    textColor: "#202020",
+                    backgroundColor: "#F5F2EC",
+                  }
+                },
+                {
+                  id: "dark",
+                  name: "Minimal Dark (Nocturno)",
+                  desc: "Oscuridad minimalista premium.",
+                  theme: {
+                    primaryColor: "#E8EDE9",
+                    accentColor: "#E1B668",
+                    titleColor: "#E8EDE9",
+                    textColor: "#A0A5A1",
+                    backgroundColor: "#0A0E0B",
+                  }
+                },
+                {
+                  id: "navy",
+                  name: "Classic Navy (Corporativo)",
+                  desc: "Azul profundo, dorado y fondo limpio.",
+                  theme: {
+                    primaryColor: "#0F1E36",
+                    accentColor: "#D4AF37",
+                    titleColor: "#0F1E36",
+                    textColor: "#2F3E46",
+                    backgroundColor: "#F4F6F9",
+                  }
+                },
+                {
+                  id: "neon",
+                  name: "Brutalist Neon (Vanguardia)",
+                  desc: "Blanco, negro e impacto rosa neón.",
+                  theme: {
+                    primaryColor: "#000000",
+                    accentColor: "#FF0055",
+                    titleColor: "#000000",
+                    textColor: "#1A1A1A",
+                    backgroundColor: "#FFFFFF",
+                  }
+                }
+              ].map((preset) => (
+                <div
+                  key={preset.id}
+                  onClick={() => {
+                    setSiteForm((prev) => ({
+                      ...prev,
+                      theme: {
+                        ...prev.theme,
+                        ...preset.theme,
+                      }
+                    }));
+                  }}
+                  className="p-4 rounded-xl border cursor-pointer hover:scale-[1.02] transition-all"
+                  style={{
+                    background: "var(--dash-card)",
+                    borderColor: "var(--dash-border)",
+                  }}
+                >
+                  <div className="font-semibold text-xs text-white mb-2">{preset.name}</div>
+                  <div className="flex gap-1.5 mb-3">
+                    <span className="w-5 h-5 rounded-full border border-white/20" style={{ background: preset.theme.primaryColor }} title="Primario" />
+                    <span className="w-5 h-5 rounded-full border border-white/20" style={{ background: preset.theme.accentColor }} title="Acento" />
+                    <span className="w-5 h-5 rounded-full border border-white/20" style={{ background: preset.theme.textColor }} title="Texto" />
+                    <span className="w-5 h-5 rounded-full border border-white/20" style={{ background: preset.theme.backgroundColor }} title="Fondo" />
+                  </div>
+                  <div className="text-[10px] text-neutral-400 leading-tight">{preset.desc}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Color Customizer */}
+              <Card className="lg:col-span-2" style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2 text-white">
+                    Selector de Colores
+                  </CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Personaliza los colores principales del portal público.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Primary Color */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-white flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: siteForm.theme?.primaryColor || "#213B26" }} />
+                      Color Primario (Botones principales, etc.)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={siteForm.theme?.primaryColor || "#213B26"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, primaryColor: e.target.value }
+                        }))}
+                        className="w-12 h-10 p-1 bg-transparent border-neutral-700"
+                      />
+                      <Input
+                        type="text"
+                        value={siteForm.theme?.primaryColor || "#213B26"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, primaryColor: e.target.value }
+                        }))}
+                        className="flex-1 bg-transparent border-neutral-700 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Accent Color */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-white flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: siteForm.theme?.accentColor || "#E1B668" }} />
+                      Color de Acento (Detalles, bordes destacados)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={siteForm.theme?.accentColor || "#E1B668"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, accentColor: e.target.value }
+                        }))}
+                        className="w-12 h-10 p-1 bg-transparent border-neutral-700"
+                      />
+                      <Input
+                        type="text"
+                        value={siteForm.theme?.accentColor || "#E1B668"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, accentColor: e.target.value }
+                        }))}
+                        className="flex-1 bg-transparent border-neutral-700 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Title Color */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-white flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: siteForm.theme?.titleColor || "#213B26" }} />
+                      Color de Títulos
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={siteForm.theme?.titleColor || "#213B26"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, titleColor: e.target.value }
+                        }))}
+                        className="w-12 h-10 p-1 bg-transparent border-neutral-700"
+                      />
+                      <Input
+                        type="text"
+                        value={siteForm.theme?.titleColor || "#213B26"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, titleColor: e.target.value }
+                        }))}
+                        className="flex-1 bg-transparent border-neutral-700 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Text Color */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-white flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: siteForm.theme?.textColor || "#202020" }} />
+                      Color del Texto General
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={siteForm.theme?.textColor || "#202020"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, textColor: e.target.value }
+                        }))}
+                        className="w-12 h-10 p-1 bg-transparent border-neutral-700"
+                      />
+                      <Input
+                        type="text"
+                        value={siteForm.theme?.textColor || "#202020"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, textColor: e.target.value }
+                        }))}
+                        className="flex-1 bg-transparent border-neutral-700 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Background Color */}
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-xs text-white flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: siteForm.theme?.backgroundColor || "#F5F2EC" }} />
+                      Color de Fondo del Sitio
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={siteForm.theme?.backgroundColor || "#F5F2EC"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, backgroundColor: e.target.value }
+                        }))}
+                        className="w-12 h-10 p-1 bg-transparent border-neutral-700"
+                      />
+                      <Input
+                        type="text"
+                        value={siteForm.theme?.backgroundColor || "#F5F2EC"}
+                        onChange={(e) => setSiteForm((prev) => ({
+                          ...prev,
+                          theme: { ...prev.theme, backgroundColor: e.target.value }
+                        }))}
+                        className="flex-1 bg-transparent border-neutral-700 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Size Config */}
+                  <div className="space-y-2 pt-2 md:col-span-2 border-t border-neutral-800">
+                    <div className="font-semibold text-xs text-white mb-2">Escala de Tipografías</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Title size */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-neutral-300">Tamaño de Títulos</Label>
+                        <select
+                          value={siteForm.theme?.titleSizeFactor || "normal"}
+                          onChange={(e) => setSiteForm((prev) => ({
+                            ...prev,
+                            theme: { ...prev.theme, titleSizeFactor: e.target.value }
+                          }))}
+                          className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-white"
+                        >
+                          <option value="small">Pequeño (85%)</option>
+                          <option value="normal">Normal (100%)</option>
+                          <option value="large">Grande (115%)</option>
+                          <option value="xlarge">Extra Grande (130%)</option>
+                        </select>
+                      </div>
+
+                      {/* Body size */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-neutral-300">Tamaño de Texto General</Label>
+                        <select
+                          value={siteForm.theme?.bodySizeFactor || "normal"}
+                          onChange={(e) => setSiteForm((prev) => ({
+                            ...prev,
+                            theme: { ...prev.theme, bodySizeFactor: e.target.value }
+                          }))}
+                          className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-white"
+                        >
+                          <option value="small">Pequeño (85%)</option>
+                          <option value="normal">Normal (100%)</option>
+                          <option value="large">Grande (115%)</option>
+                          <option value="xlarge">Extra Grande (130%)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Interactive Live Preview */}
+              <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
+                <CardHeader>
+                  <CardTitle className="text-sm text-white">Vista Previa en Vivo</CardTitle>
+                  <CardDescription style={{ color: "var(--dash-muted)" }}>
+                    Demostración interactiva en tiempo real.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex items-center justify-center p-6 h-full min-h-[300px]">
+                  <div
+                    className="p-6 rounded-2xl w-full max-w-sm border transition-all duration-300 shadow-xl"
+                    style={{
+                      backgroundColor: siteForm.theme?.backgroundColor || "#F5F2EC",
+                      color: siteForm.theme?.textColor || "#202020",
+                      borderColor: siteForm.theme?.accentColor || "#E1B668",
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <span
+                        className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full border"
+                        style={{
+                          borderColor: siteForm.theme?.accentColor || "#E1B668",
+                          color: siteForm.theme?.accentColor || "#E1B668",
+                        }}
+                      >
+                        Vista Previa
+                      </span>
+                      <span className="text-[11px] font-medium opacity-80">MODELO 01</span>
+                    </div>
+
+                    <h3
+                      className="font-bold leading-tight mb-2 text-display"
+                      style={{
+                        color: siteForm.theme?.titleColor || siteForm.theme?.primaryColor || "#213B26",
+                        fontSize: siteForm.theme?.titleSizeFactor === "small" ? "1.2rem" :
+                                  siteForm.theme?.titleSizeFactor === "large" ? "1.6rem" :
+                                  siteForm.theme?.titleSizeFactor === "xlarge" ? "1.85rem" : "1.4rem",
+                      }}
+                    >
+                      Bucare Plaza Suite
+                    </h3>
+
+                    <p
+                      className="mb-6 leading-relaxed text-xs opacity-90"
+                      style={{
+                        fontSize: siteForm.theme?.bodySizeFactor === "small" ? "10px" :
+                                  siteForm.theme?.bodySizeFactor === "large" ? "13px" :
+                                  siteForm.theme?.bodySizeFactor === "xlarge" ? "14px" : "12px",
+                      }}
+                    >
+                      Apartamentos de lujo contemporáneos con diseño impecable y arquitectura inteligente.
+                    </p>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-neutral-300/40">
+                      <span className="font-bold text-xs">$118,980</span>
+                      <button
+                        type="button"
+                        className="px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-[0.1em]"
+                        style={{
+                          backgroundColor: siteForm.theme?.primaryColor || "#213B26",
+                          color: "#ffffff",
+                        }}
+                      >
+                        Saber más
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                type="submit"
+                disabled={savingTheme}
+                className="gap-2 font-semibold shadow-lg w-full sm:w-auto"
+                style={{ background: "var(--dash-accent)", color: "#0D1810", border: "none" }}
+              >
+                {savingTheme ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
+                Guardar Diseño & Tipografía
               </Button>
             </div>
           </form>
@@ -674,18 +1300,24 @@ export function DashboardConfiguracion() {
           )}
 
           <Tabs defaultValue="p_hero" className="w-full space-y-4">
-            <TabsList
-              className="p-1 rounded-xl flex flex-wrap"
-              style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)" }}
+            {/* Scrollable horizontal tab strip for portal sub-sections */}
+            <div
+              className="overflow-x-auto -mx-0.5 px-0.5"
+              style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
             >
-              <TabsTrigger value="p_hero" className="text-xs">1. Inicio / Hero</TabsTrigger>
-              <TabsTrigger value="p_proximo" className="text-xs">2. ¿Próximo Hogar?</TabsTrigger>
-              <TabsTrigger value="p_apartamentos" className="text-xs">3. Apartamentos (6 Modelos)</TabsTrigger>
-              <TabsTrigger value="p_areas" className="text-xs">4. Áreas Comunes</TabsTrigger>
-              <TabsTrigger value="p_contacto" className="text-xs">5. Contacto & Footer</TabsTrigger>
-              <TabsTrigger value="p_comercial" className="text-xs">6. Comercial (Plaza)</TabsTrigger>
-              <TabsTrigger value="p_faq" className="text-xs">7. Preguntas Frecuentes (FAQ Home)</TabsTrigger>
-            </TabsList>
+              <TabsList
+                className="p-1 rounded-xl flex w-max min-w-full"
+                style={{ background: "var(--dash-card)", border: "1px solid var(--dash-border)" }}
+              >
+                <TabsTrigger value="p_hero" className="text-[11px] whitespace-nowrap px-3 py-1.5 h-auto">1. Hero</TabsTrigger>
+                <TabsTrigger value="p_proximo" className="text-[11px] whitespace-nowrap px-3 py-1.5 h-auto">2. Próximo Hogar</TabsTrigger>
+                <TabsTrigger value="p_apartamentos" className="text-[11px] whitespace-nowrap px-3 py-1.5 h-auto">3. Apartamentos</TabsTrigger>
+                <TabsTrigger value="p_areas" className="text-[11px] whitespace-nowrap px-3 py-1.5 h-auto">4. Áreas</TabsTrigger>
+                <TabsTrigger value="p_contacto" className="text-[11px] whitespace-nowrap px-3 py-1.5 h-auto">5. Contacto</TabsTrigger>
+                <TabsTrigger value="p_comercial" className="text-[11px] whitespace-nowrap px-3 py-1.5 h-auto">6. Comercial</TabsTrigger>
+                <TabsTrigger value="p_faq" className="text-[11px] whitespace-nowrap px-3 py-1.5 h-auto">7. FAQ</TabsTrigger>
+              </TabsList>
+            </div>
 
 
             {/* Sub-Pestaña: Hero */}
@@ -790,7 +1422,7 @@ export function DashboardConfiguracion() {
                     <Button
                       onClick={() => handleSavePortalSection("hero")}
                       disabled={savingPortal}
-                      className="gap-2 font-semibold"
+                      className="gap-2 font-semibold w-full sm:w-auto"
                       style={{ background: "var(--dash-accent)", color: "#0D1810" }}
                     >
                       {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
@@ -932,7 +1564,7 @@ export function DashboardConfiguracion() {
                     <Button
                       onClick={() => handleSavePortalSection("proximo_hogar")}
                       disabled={savingPortal}
-                      className="gap-2 font-semibold"
+                      className="gap-2 font-semibold w-full sm:w-auto"
                       style={{ background: "var(--dash-accent)", color: "#0D1810" }}
                     >
                       {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
@@ -1163,7 +1795,7 @@ export function DashboardConfiguracion() {
                           {/* Sección: Financiamiento y Costos */}
                           <div className="pt-2 border-t border-white/5 space-y-2">
                             <Label className="text-[11px] font-bold" style={{ color: "var(--dash-accent)" }}>Planes de Financiamiento</Label>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                               <div>
                                 <Label className="text-[9px]" style={{ color: "var(--dash-muted)" }}>Precio Total</Label>
                                 <Input
@@ -1403,11 +2035,11 @@ export function DashboardConfiguracion() {
                     <Button
                       onClick={() => handleSavePortalSection("apartamentos")}
                       disabled={savingPortal}
-                      className="gap-2 font-semibold"
+                      className="gap-2 font-semibold w-full sm:w-auto"
                       style={{ background: "var(--dash-accent)", color: "#0D1810" }}
                     >
                       {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
-                      Guardar Todos los Modelos de Apartamentos
+                      Guardar Modelos de Apartamentos
                     </Button>
                   </div>
                 </CardContent>
@@ -1509,7 +2141,7 @@ export function DashboardConfiguracion() {
                     <Button
                       onClick={() => handleSavePortalSection("areas")}
                       disabled={savingPortal}
-                      className="gap-2 font-semibold"
+                      className="gap-2 font-semibold w-full sm:w-auto"
                       style={{ background: "var(--dash-accent)", color: "#0D1810" }}
                     >
                       {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
@@ -1599,11 +2231,11 @@ export function DashboardConfiguracion() {
                     <Button
                       onClick={() => handleSavePortalSection("contacto")}
                       disabled={savingPortal}
-                      className="gap-2 font-semibold"
+                      className="gap-2 font-semibold w-full sm:w-auto"
                       style={{ background: "var(--dash-accent)", color: "#0D1810" }}
                     >
                       {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
-                      Guardar Información de Contacto & Footer
+                      Guardar Contacto & Footer
                     </Button>
                   </div>
                 </CardContent>
@@ -2379,7 +3011,7 @@ export function DashboardConfiguracion() {
                 <Button
                   onClick={() => handleSavePortalSection("comercial" as any)}
                   disabled={savingPortal}
-                  className="gap-2 font-semibold"
+                  className="gap-2 font-semibold w-full sm:w-auto"
                   style={{ background: "var(--dash-accent)", color: "#0D1810" }}
                 >
                   {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
@@ -2558,7 +3190,7 @@ export function DashboardConfiguracion() {
                     <Button
                       onClick={() => handleSavePortalSection("faq")}
                       disabled={savingPortal}
-                      className="gap-2 font-semibold"
+                      className="gap-2 font-semibold w-full sm:w-auto"
                       style={{ background: "var(--dash-accent)", color: "#0D1810" }}
                     >
                       {savingPortal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={16} />}
@@ -2577,7 +3209,7 @@ export function DashboardConfiguracion() {
           <div className="flex justify-end">
             <Button
               onClick={() => setIsCreateOpen(true)}
-              className="gap-2 font-semibold shadow-lg transition-all"
+              className="gap-2 font-semibold shadow-lg transition-all w-full sm:w-auto"
               style={{
                 background: "var(--dash-accent)",
                 color: "#0D1810",
@@ -2650,35 +3282,47 @@ export function DashboardConfiguracion() {
 
           {/* Barra de Búsqueda y Filtros */}
           <Card style={{ background: "var(--dash-card)", borderColor: "var(--dash-border)" }}>
-            <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-3">
-              <div className="relative w-full md:w-80">
-                <Search
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2"
-                  style={{ color: "var(--dash-muted)" }}
-                />
-                <Input
-                  placeholder="Buscar por nombre, email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 text-xs"
-                  style={{
-                    background: "var(--dash-sidebar)",
-                    borderColor: "var(--dash-border)",
-                    color: "var(--dash-text)",
-                  }}
-                />
+            <CardContent className="p-3 sm:p-4 space-y-3">
+              {/* Search row */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    style={{ color: "var(--dash-muted)" }}
+                  />
+                  <Input
+                    placeholder="Buscar por nombre, email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 text-xs"
+                    style={{
+                      background: "var(--dash-sidebar)",
+                      borderColor: "var(--dash-border)",
+                      color: "var(--dash-text)",
+                    }}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchUsers}
+                  className="p-2 h-9 w-9 shrink-0"
+                  style={{ background: "transparent", borderColor: "var(--dash-border)" }}
+                >
+                  <RefreshCw size={14} style={{ color: "var(--dash-muted)" }} />
+                </Button>
               </div>
-
-              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                <div className="flex items-center gap-1 text-xs" style={{ color: "var(--dash-muted)" }}>
+              {/* Filters row */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 text-xs shrink-0" style={{ color: "var(--dash-muted)" }}>
                   <Filter size={13} />
-                  <span>Rol:</span>
+                  <span>Filtros:</span>
                 </div>
                 <select
                   value={selectedRoleFilter}
                   onChange={(e) => setSelectedRoleFilter(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
+                  className="flex-1 min-w-[120px] px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
                   style={{
                     background: "var(--dash-sidebar)",
                     border: "1px solid var(--dash-border)",
@@ -2697,7 +3341,7 @@ export function DashboardConfiguracion() {
                 <select
                   value={selectedStatusFilter}
                   onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
+                  className="flex-1 min-w-[120px] px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
                   style={{
                     background: "var(--dash-sidebar)",
                     border: "1px solid var(--dash-border)",
@@ -2708,16 +3352,6 @@ export function DashboardConfiguracion() {
                   <option value="ACTIVOS">Solo Activos</option>
                   <option value="INACTIVOS">Solo Inactivos</option>
                 </select>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchUsers}
-                  className="p-2 h-8 w-8 ml-auto md:ml-0"
-                  style={{ background: "transparent", borderColor: "var(--dash-border)" }}
-                >
-                  <RefreshCw size={14} style={{ color: "var(--dash-muted)" }} />
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -2954,7 +3588,209 @@ export function DashboardConfiguracion() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── Pestaña 5: Notificaciones Push & Eventos ── */}
+        <TabsContent value="notifications" className="space-y-4 animate-fade-in">
+
+          {/* Matriz de Gestión de Eventos */}
+          <Card className="bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.08)] rounded-xl">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.05)] pb-4">
+              <div>
+                <CardTitle className="text-[#F0EDE8] flex items-center gap-2">
+                  <SlidersHorizontal className="w-5 h-5 text-[#E1B668]" /> Control de Notificaciones y Eventos
+                </CardTitle>
+                <CardDescription className="text-gray-400 text-xs mt-1">
+                  Configura qué eventos disparan alertas en el sistema y selecciona qué roles de usuario recibirán las notificaciones push.
+                </CardDescription>
+              </div>
+              <Button
+                onClick={handleSaveEventSettings}
+                disabled={savingEvents}
+                className="text-xs font-semibold bg-[#E1B668] text-[#0D1810] hover:bg-[#E1B668]/90"
+              >
+                {savingEvents ? <Loader2 className="animate-spin w-4 h-4 mr-1.5" /> : <Save className="w-4 h-4 mr-1.5" />}
+                Guardar Configuración
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-5 space-y-4">
+              {eventsSuccess && (
+                <div className="p-3 rounded-lg text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold flex items-center gap-2 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" /> {eventsSuccess}
+                </div>
+              )}
+
+              {loadingEvents ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-2">
+                  <Loader2 className="animate-spin w-8 h-8 text-[#E1B668]" />
+                  <span className="text-xs text-gray-400">Cargando eventos...</span>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-[rgba(255,255,255,0.06)] text-gray-400">
+                        <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-[10px]">Evento del Sistema</th>
+                        <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-[10px] text-center w-[120px]">Estado</th>
+                        <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-[10px] text-center">Super Admin</th>
+                        <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-[10px] text-center">Admin</th>
+                        <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-[10px] text-center">Ventas</th>
+                        <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-[10px] text-center">Contador</th>
+                        <th className="py-2.5 px-3 font-semibold uppercase tracking-wider text-[10px] text-center">Proyecto</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[rgba(255,255,255,0.04)]">
+                      {[
+                        { key: "client.created", label: "Creación de un nuevo cliente", desc: "Se dispara al registrarse un nuevo cliente en el portal" },
+                        { key: "chat.message", label: "Nuevo mensaje de cliente en chat", desc: "Se dispara cuando un cliente escribe en el chat web o WhatsApp" },
+                        { key: "cita.created", label: "Cliente agenda una cita", desc: "Se dispara cuando se agenda una nueva cita en el calendario" },
+                        { key: "cita.reminder.24h", label: "Recordatorio de cita (24 horas antes)", desc: "Envía una alerta 24 horas antes de la cita programada" },
+                        { key: "cita.time", label: "Recordatorio al inicio de la cita", desc: "Envía una alerta justo en la fecha y hora seleccionada" },
+                      ].map((item) => {
+                        const setting = eventSettings.find(s => s.event === item.key) || { event: item.key, enabled: false, roles: "" };
+                        const assignedRoles = setting.roles.split(",").map(r => r.trim()).filter(Boolean);
+
+                        return (
+                          <tr key={item.key} className="hover:bg-[rgba(255,255,255,0.015)] transition-colors">
+                            <td className="py-4 px-3">
+                              <span className="font-semibold block text-[#F0EDE8]">{item.label}</span>
+                              <span className="text-[11px] text-gray-500 mt-0.5 block">{item.desc}</span>
+                            </td>
+                            <td className="py-4 px-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleEvent(item.key, !setting.enabled)}
+                                className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all ${
+                                  setting.enabled 
+                                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                                    : "bg-white/5 text-gray-500 border border-white/5"
+                                }`}
+                              >
+                                {setting.enabled ? "Activo" : "Inactivo"}
+                              </button>
+                            </td>
+                            {["SUPERADMIN", "ADMIN", "VENTAS", "CONTADOR", "PROYECTO"].map((r) => {
+                              const checked = assignedRoles.includes(r);
+                              return (
+                                <td key={r} className="py-4 px-3 text-center">
+                                  <input
+                                    type="checkbox"
+                                    disabled={!setting.enabled}
+                                    checked={checked}
+                                    onChange={() => handleToggleEventRole(item.key, r)}
+                                    className="h-3.5 w-3.5 accent-[#E1B668] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                  />
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Estado de Suscripción en Dispositivo Actual */}
+          <Card className="bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.08)] rounded-xl">
+            <CardHeader>
+              <CardTitle className="text-[#F0EDE8] flex items-center gap-2">
+                <Bell className="w-5 h-5 text-[#E1B668]" /> Notificaciones Push en este Dispositivo
+              </CardTitle>
+              <CardDescription className="text-gray-400 text-xs">
+                Activa las notificaciones automáticas fuera del navegador para recibir alertas directamente en tu pantalla (PC, Android o iOS).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!notificationsSupported ? (
+                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs leading-relaxed">
+                  ⚠️ Tu navegador o dispositivo actual no es totalmente compatible con la API de Web Push. 
+                  Asegúrate de estar en una conexión segura (HTTPS) y usar un navegador moderno. 
+                  En dispositivos iOS (iPhone), debes añadir la aplicación a la pantalla de inicio primero.
+                </div>
+              ) : (
+                <>
+                  {typeof window !== "undefined" && Notification.permission === "denied" && (
+                    <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs leading-relaxed flex items-start gap-2.5 animate-fade-in">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <div>
+                        <strong>⚠️ Notificaciones Bloqueadas:</strong> Has bloqueado las notificaciones para este sitio.
+                        Haz clic en el candado al lado de la URL en tu navegador, cambia el permiso a "Permitir" y recarga la página.
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)]">
+                    <div>
+                      <h4 className="text-sm font-semibold text-[#F0EDE8]">Recibir Alertas en este Dispositivo</h4>
+                      <p className="text-xs text-gray-400 mt-1">Habilita o deshabilita la vinculación del navegador con el servidor.</p>
+                    </div>
+                    <Button 
+                      type="button" 
+                      onClick={handleToggleNotifications}
+                      className={`text-xs font-semibold px-6 py-2 rounded-lg transition-colors ${
+                        notificationsEnabled 
+                          ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30" 
+                          : "bg-[#E1B668] text-[#0D1810] hover:bg-[#E1B668]/90"
+                      }`}
+                    >
+                      {notificationsEnabled ? "Desactivar Notificaciones" : "Activar Notificaciones"}
+                    </Button>
+                  </div>
+
+                  {notificationsEnabled && (
+                    <div className="p-5 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[rgba(255,255,255,0.01)] space-y-4">
+                      <div className="border-b border-[rgba(255,255,255,0.05)] pb-2 flex items-center justify-between">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#E1B668]">Simulador de Envío de Notificación</h4>
+                        <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">Suscripción Activa</Badge>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs text-gray-400">Título de la Notificación</Label>
+                          <Input 
+                            value={testTitle} 
+                            onChange={(e) => setTestTitle(e.target.value)} 
+                            className="bg-[rgba(255,255,255,0.02)] text-[#F0EDE8] border-[rgba(255,255,255,0.08)]"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs text-gray-400">Cuerpo del Mensaje</Label>
+                          <Input 
+                            value={testMessage} 
+                            onChange={(e) => setTestMessage(e.target.value)} 
+                            className="bg-[rgba(255,255,255,0.02)] text-[#F0EDE8] border-[rgba(255,255,255,0.08)]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <Button 
+                          type="button" 
+                          disabled={sendingTest}
+                          onClick={handleSendTestNotification}
+                          className="bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-xs text-[#F0EDE8] hover:bg-[rgba(255,255,255,0.08)] font-semibold"
+                        >
+                          {sendingTest ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Bell className="w-4 h-4 mr-2" />}
+                          Enviar Notificación de Prueba
+                        </Button>
+                        
+                        {testSuccess && (
+                          <span className="text-xs text-[#4ADE80] font-semibold bg-[#4ADE80]/5 px-3 py-1.5 rounded-lg border border-[#4ADE80]/20">
+                            {testSuccess}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
 
       {/* ── Modal: Registrar Nuevo Usuario ── */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

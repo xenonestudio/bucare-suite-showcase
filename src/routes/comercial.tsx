@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
 import { useSiteContent } from "@/hooks/useSiteContent";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   MapPin, Phone, Mail, Instagram, Facebook, ArrowRight,
   ChevronDown, Menu, X, Building2, Users, Layers, Car,
@@ -14,9 +15,16 @@ export const Route = createFileRoute("/comercial")({
       { name: "description", content: "Bucare Plaza: el centro comercial boutique más exclusivo de Nueva Guayana. Espacios comerciales de primer nivel, arquitectura contemporánea y alto flujo peatonal." },
       { property: "og:title", content: "Bucare Plaza — Plaza Comercial Premium" },
       { property: "og:description", content: "Espacios comerciales de primer nivel y arquitectura contemporánea en Nueva Guayana." },
-      { property: "og:image", content: "/logo.webp" },
+      { property: "og:url", content: "https://bucaresuite.com/comercial" },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://bucaresuite.com/og-image.jpg" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Bucare Plaza — Plaza Comercial Premium" },
+      { name: "twitter:description", content: "El centro comercial boutique más exclusivo de Nueva Guayana. Espacios comerciales de primer nivel." },
+      { name: "twitter:image", content: "https://bucaresuite.com/og-image.jpg" },
     ],
     links: [
+      { rel: "canonical", href: "https://bucaresuite.com/comercial" },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "shortcut icon", href: "/favicon.ico" },
     ],
@@ -37,7 +45,7 @@ const C = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 function BucarePlazaPage() {
-  const { content } = useSiteContent();
+  const { content, loading } = useSiteContent();
   const comData = content?.comercial;
 
   const LOCALES = comData?.locales || [];
@@ -90,7 +98,7 @@ function BucarePlazaPage() {
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center" }}>
           <img 
-            src="/comercial/logo_plaza.png" 
+            src="/comercial/logo_plaza.webp" 
             alt="Bucare Plaza Logo" 
             style={{ 
               height: "96px", 
@@ -155,9 +163,11 @@ function BucarePlazaPage() {
 
       {/* ══ HERO ════════════════════════════════════════════════════════════ */}
       <section style={{ position: "relative", height: "100dvh", minHeight: "600px", display: "flex", alignItems: "flex-end" }}>
-        {comData?.hero?.video ? (
+        {loading ? (
+          <Skeleton className="w-full h-full bg-white/5 animate-pulse" />
+        ) : comData?.hero?.video ? (
           <>
-            <img src={comData.hero.mainImage || "/comercial/025.jpeg"} alt="Bucare Plaza poster"
+            <img src={comData.hero.mainImage || "/comercial/025.webp"} alt="Bucare Plaza poster"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.7s ease", opacity: heroVideoReady ? 0 : 1 }} />
             <video
               src={comData.hero.video}
@@ -171,7 +181,7 @@ function BucarePlazaPage() {
             />
           </>
         ) : (
-          <img src={comData?.hero?.mainImage || "/comercial/025.jpeg"} alt="Bucare Plaza"
+          <img src={comData?.hero?.mainImage || "/comercial/025.webp"} alt="Bucare Plaza"
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         )}
         {/* Gradient overlay */}
@@ -193,11 +203,25 @@ function BucarePlazaPage() {
             lineHeight: 0.9, margin: "0 0 24px", color: C.text,
             whiteSpace: "pre-line"
           }}>
-            {comData?.hero?.title || "bucare\nplaza."}
+            {loading ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
+                <Skeleton className="h-10 w-64 bg-white/20" />
+                <Skeleton className="h-10 w-48 bg-white/20" />
+              </div>
+            ) : (
+              comData?.hero?.title || "bucare\nplaza."
+            )}
           </h1>
-          <p style={{ color: "rgba(240,237,232,0.65)", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", maxWidth: "480px", lineHeight: 1.5, marginBottom: "36px" }}>
-            {comData?.hero?.subtitle || "El escenario comercial donde las mejores marcas de la ciudad encuentran su hogar."}
-          </p>
+          <div style={{ color: "rgba(240,237,232,0.65)", fontSize: "clamp(1rem, 2.5vw, 1.2rem)", maxWidth: "480px", lineHeight: 1.5, marginBottom: "36px" }}>
+            {loading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full bg-white/25" />
+                <Skeleton className="h-4 w-5/6 bg-white/25" />
+              </div>
+            ) : (
+              comData?.hero?.subtitle || "El escenario comercial donde las mejores marcas de la ciudad encuentran su hogar."
+            )}
+          </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <button onClick={() => scrollTo("espacios")}
               style={{
@@ -251,16 +275,38 @@ function BucarePlazaPage() {
           {/* Text */}
           <div>
             <p style={{ color: C.gold, fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "20px" }}>
-              {comData?.proyecto?.subtitle || "01 El Proyecto"}
+              {loading ? <Skeleton className="h-4 w-28 bg-primary/10" /> : (comData?.proyecto?.subtitle || "01 El Proyecto")}
             </p>
             <h2 style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 800, fontSize: "clamp(2rem, 4vw, 3rem)", letterSpacing: "-0.03em", lineHeight: 1.05, margin: "0 0 24px", color: C.text, whiteSpace: "pre-line" }}>
-              {comData?.proyecto?.title || "Diseñado para el\néxito de tu marca."}
+              {loading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-64 bg-primary/10" />
+                  <Skeleton className="h-8 w-48 bg-primary/10" />
+                </div>
+              ) : (
+                comData?.proyecto?.title || "Diseñado para el\néxito de tu marca."
+              )}
             </h2>
             <p style={{ color: C.muted, fontSize: "0.95rem", lineHeight: 1.8, marginBottom: "20px" }}>
-              {comData?.proyecto?.desc1 || "Bucare Plaza es la plaza comercial boutique del proyecto Bucare, concebida como un ecosistema de marcas curadas que comparten valores: calidad, diseño y experiencia de cliente."}
+              {loading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full bg-primary/5" />
+                  <Skeleton className="h-4 w-11/12 bg-primary/5" />
+                  <Skeleton className="h-4 w-4/5 bg-primary/5" />
+                </div>
+              ) : (
+                comData?.proyecto?.desc1 || "Bucare Plaza es la plaza comercial boutique del proyecto Bucare, concebida como un ecosistema de marcas curadas que comparten valores: calidad, diseño y experiencia de cliente."
+              )}
             </p>
             <p style={{ color: C.muted, fontSize: "0.95rem", lineHeight: 1.8, marginBottom: "36px" }}>
-              {comData?.proyecto?.desc2 || "Ubicada en la planta baja del complejo Bucare Suite & Plaza, tiene frente a dos calles principales y comparte flujo de visitas con los residentes de las 60 unidades habitacionales de la torre."}
+              {loading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full bg-primary/5" />
+                  <Skeleton className="h-4 w-5/6 bg-primary/5" />
+                </div>
+              ) : (
+                comData?.proyecto?.desc2 || "Ubicada en la planta baja del complejo Bucare Suite & Plaza, tiene frente a dos calles principales y comparte flujo de visitas con los residentes de las 60 unidades habitacionales de la torre."
+              )}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {(comData?.proyecto?.bullets || [
@@ -287,7 +333,7 @@ function BucarePlazaPage() {
             <div style={{ borderRadius: "20px", overflow: "hidden", aspectRatio: "4/3" }}>
               {comData?.proyecto?.video ? (
                 <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                  <img src={comData.proyecto.image || "/comercial/027.jpeg"} alt="Bucare Plaza día poster"
+                  <img src={comData.proyecto.image || "/comercial/027.webp"} alt="Bucare Plaza día poster"
                     style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.7s ease", opacity: projectVideoReady ? 0 : 1 }} />
                   <video
                     src={comData.proyecto.video}
@@ -301,7 +347,7 @@ function BucarePlazaPage() {
                   />
                 </div>
               ) : (
-                <img src={comData?.proyecto?.image || "/comercial/027.jpeg"} alt="Bucare Plaza día"
+                <img src={comData?.proyecto?.image || "/comercial/027.webp"} alt="Bucare Plaza día"
                   style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.5s ease" }}
                   onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
                   onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")} />
@@ -589,7 +635,7 @@ function BucarePlazaPage() {
               Todo lo que tu<br />negocio necesita.
             </h2>
             <div style={{ borderRadius: "20px", overflow: "hidden", aspectRatio: "4/5", position: "relative" }}>
-              <img src="/comercial/030.jpeg" alt="Bucare Plaza exterior"
+              <img src="/comercial/030.webp" alt="Bucare Plaza exterior"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
               <div style={{
                 position: "absolute", bottom: "20px", left: "20px", right: "20px",
@@ -653,19 +699,19 @@ function BucarePlazaPage() {
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gridTemplateRows: "auto auto", gap: "12px" }}>
             <div style={{ gridRow: "span 2", borderRadius: "20px", overflow: "hidden", aspectRatio: "3/4" }}>
-              <img src="/comercial/029.jpeg" alt="Vista exterior día"
+              <img src="/comercial/029.webp" alt="Vista exterior día"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.5s ease" }}
                 onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
                 onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")} />
             </div>
             <div style={{ borderRadius: "20px", overflow: "hidden" }}>
-              <img src="/comercial/028.jpeg" alt="Vista frontal"
+              <img src="/comercial/028.webp" alt="Vista frontal"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.5s ease" }}
                 onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
                 onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")} />
             </div>
             <div style={{ borderRadius: "20px", overflow: "hidden" }}>
-              <img src="/comercial/030.jpeg" alt="Vista lateral"
+              <img src="/comercial/030.webp" alt="Vista lateral"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.5s ease" }}
                 onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
                 onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")} />
@@ -684,7 +730,7 @@ function BucarePlazaPage() {
         }}>
           {/* Left: image + overlay */}
           <div style={{ position: "relative" }}>
-            <img src="/comercial/027.jpeg" alt="Contacto"
+            <img src="/comercial/027.webp" alt="Contacto"
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             <div style={{
               position: "absolute", inset: 0,

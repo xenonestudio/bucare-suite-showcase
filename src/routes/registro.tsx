@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import property1 from "@/assets/property-1.jpg";
 import { useState } from "react";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
+import { getApiUrl } from "@/lib/api";
 
 export const Route = createFileRoute("/registro")({
   head: () => ({
@@ -45,7 +46,7 @@ function Registro() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/v1/auth/register", {
+      const response = await fetch(getApiUrl("/api/v1/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -63,8 +64,21 @@ function Registro() {
         throw new Error(data.message || "Error al crear la cuenta");
       }
 
-      // Redirigir al login
-      navigate({ to: "/login" });
+      // Iniciar sesión automáticamente o guardar datos provisionales
+      if (data.data?.token && data.data?.user) {
+        localStorage.setItem("token", data.data.token);
+        localStorage.setItem("user", JSON.stringify(data.data.user));
+        
+        if (data.data.user?.id) {
+          const { associateVisitorWithUser } = await import("../lib/tracker");
+          await associateVisitorWithUser(data.data.user.id).catch(() => null);
+        }
+        
+        navigate({ to: "/" });
+      } else {
+        navigate({ to: "/login" });
+      }
+
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -129,9 +143,16 @@ function Registro() {
           <div className="mb-6">
             <GoogleLoginButton
               text="Registrarse con Google"
-              onSuccess={(data) => {
+              onSuccess={async (data) => {
                 localStorage.setItem("token", data.token);
                 localStorage.setItem("user", JSON.stringify(data.user));
+                
+                // Asociar visitante anónimo con el usuario
+                if (data.user?.id) {
+                  const { associateVisitorWithUser } = await import("../lib/tracker");
+                  await associateVisitorWithUser(data.user.id).catch(() => null);
+                }
+
                 navigate({ to: "/" });
               }}
               onError={(msg) => setError(msg)}

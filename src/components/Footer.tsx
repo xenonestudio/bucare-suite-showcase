@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Instagram } from "lucide-react";
 import { useSiteContent } from "@/hooks/useSiteContent";
 
 export function Footer() {
@@ -22,9 +22,9 @@ export function Footer() {
 
           {/* Navigation */}
           <div>
-            <h4 className="text-xs font-semibold tracking-widest uppercase text-neutral-400 mb-4">
+            <h3 className="text-xs font-semibold tracking-widest uppercase text-neutral-400 mb-4">
               Navegación
-            </h4>
+            </h3>
             <ul className="space-y-2.5 text-sm">
               <li>
                 <Link to="/" className="hover:text-white transition-colors">
@@ -51,22 +51,31 @@ export function Footer() {
 
           {/* Location / Info */}
           <div>
-            <h4 className="text-xs font-semibold tracking-widest uppercase text-neutral-400 mb-4">
+            <h3 className="text-xs font-semibold tracking-widest uppercase text-neutral-400 mb-4">
               Ubicación & Contacto
-            </h4>
+            </h3>
             <address className="not-italic text-xs text-neutral-400 space-y-2 leading-relaxed whitespace-pre-line">
               <p>{c.address}</p>
               <p className="pt-2 text-neutral-300">{c.phone}</p>
               <p className="text-neutral-300">{c.email}</p>
             </address>
+            <a
+              href="https://www.instagram.com/bucaresuite/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-4 text-xs text-neutral-300 hover:text-white transition-colors"
+            >
+              <Instagram className="w-4 h-4 text-primary" />
+              <span>@bucaresuite</span>
+            </a>
           </div>
 
 
           {/* Action */}
           <div>
-            <h4 className="text-xs font-semibold tracking-widest uppercase text-neutral-400 mb-4">
+            <h3 className="text-xs font-semibold tracking-widest uppercase text-neutral-400 mb-4">
               Visitas Privadas
-            </h4>
+            </h3>
             <p className="text-xs text-neutral-400 mb-4 leading-relaxed">
               Agende un recorrido guiado presencial o virtual con nuestros asesores.
             </p>

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { UploadCloud, Loader2, X, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { getApiUrl } from "@/lib/api";
+
 interface VideoUploaderProps {
   value: string;
   onChange: (url: string) => void;
@@ -42,7 +44,7 @@ export function VideoUploader({ value, onChange, label }: VideoUploaderProps) {
       setUploadProgress(70);
       const token = localStorage.getItem("token");
 
-      const res = await fetch("/api/v1/upload", {
+      const res = await fetch(getApiUrl("/api/v1/upload"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -16,6 +16,7 @@ import { Route as ComercialRouteImport } from './routes/comercial'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as OfflineRouteImport } from './routes/offline'
 import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardChatRouteImport } from './routes/dashboard.chat'
@@ -23,6 +24,7 @@ import { Route as DashboardCitasRouteImport } from './routes/dashboard.citas'
 import { Route as DashboardClientesRouteImport } from './routes/dashboard.clientes'
 import { Route as DashboardConfiguracionRouteImport } from './routes/dashboard.configuracion'
 import { Route as DashboardPerfilRouteImport } from './routes/dashboard.perfil'
+import { Route as DashboardReportesRouteImport } from './routes/dashboard.reportes'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,6 +59,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfflineRoute = OfflineRouteImport.update({
+  id: '/offline',
+  path: '/offline',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistroRoute = RegistroRouteImport.update({
@@ -94,6 +101,11 @@ const DashboardPerfilRoute = DashboardPerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardReportesRoute = DashboardReportesRouteImport.update({
+  id: '/reportes',
+  path: '/reportes',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,12 +115,14 @@ export interface FileRoutesByFullPath {
   '/contacto': typeof ContactoRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/offline': typeof OfflineRoute
   '/registro': typeof RegistroRoute
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/citas': typeof DashboardCitasRoute
   '/dashboard/clientes': typeof DashboardClientesRoute
   '/dashboard/configuracion': typeof DashboardConfiguracionRoute
   '/dashboard/perfil': typeof DashboardPerfilRoute
+  '/dashboard/reportes': typeof DashboardReportesRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -118,12 +132,14 @@ export interface FileRoutesByTo {
   '/comercial': typeof ComercialRoute
   '/contacto': typeof ContactoRoute
   '/login': typeof LoginRoute
+  '/offline': typeof OfflineRoute
   '/registro': typeof RegistroRoute
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/citas': typeof DashboardCitasRoute
   '/dashboard/clientes': typeof DashboardClientesRoute
   '/dashboard/configuracion': typeof DashboardConfiguracionRoute
   '/dashboard/perfil': typeof DashboardPerfilRoute
+  '/dashboard/reportes': typeof DashboardReportesRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -135,12 +151,14 @@ export interface FileRoutesById {
   '/contacto': typeof ContactoRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/offline': typeof OfflineRoute
   '/registro': typeof RegistroRoute
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/citas': typeof DashboardCitasRoute
   '/dashboard/clientes': typeof DashboardClientesRoute
   '/dashboard/configuracion': typeof DashboardConfiguracionRoute
   '/dashboard/perfil': typeof DashboardPerfilRoute
+  '/dashboard/reportes': typeof DashboardReportesRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -153,12 +171,14 @@ export interface FileRouteTypes {
     | '/contacto'
     | '/dashboard'
     | '/login'
+    | '/offline'
     | '/registro'
     | '/dashboard/chat'
     | '/dashboard/citas'
     | '/dashboard/clientes'
     | '/dashboard/configuracion'
     | '/dashboard/perfil'
+    | '/dashboard/reportes'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -168,12 +188,14 @@ export interface FileRouteTypes {
     | '/comercial'
     | '/contacto'
     | '/login'
+    | '/offline'
     | '/registro'
     | '/dashboard/chat'
     | '/dashboard/citas'
     | '/dashboard/clientes'
     | '/dashboard/configuracion'
     | '/dashboard/perfil'
+    | '/dashboard/reportes'
     | '/dashboard'
   id:
     | '__root__'
@@ -184,12 +206,14 @@ export interface FileRouteTypes {
     | '/contacto'
     | '/dashboard'
     | '/login'
+    | '/offline'
     | '/registro'
     | '/dashboard/chat'
     | '/dashboard/citas'
     | '/dashboard/clientes'
     | '/dashboard/configuracion'
     | '/dashboard/perfil'
+    | '/dashboard/reportes'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -201,6 +225,7 @@ export interface RootRouteChildren {
   ContactoRoute: typeof ContactoRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
+  OfflineRoute: typeof OfflineRoute
   RegistroRoute: typeof RegistroRoute
 }
 
@@ -255,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/offline': {
+      id: '/offline'
+      path: '/offline'
+      fullPath: '/offline'
+      preLoaderRoute: typeof OfflineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/registro': {
       id: '/registro'
       path: '/registro'
@@ -304,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPerfilRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/reportes': {
+      id: '/dashboard/reportes'
+      path: '/reportes'
+      fullPath: '/dashboard/reportes'
+      preLoaderRoute: typeof DashboardReportesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -313,6 +352,7 @@ interface DashboardRouteChildren {
   DashboardClientesRoute: typeof DashboardClientesRoute
   DashboardConfiguracionRoute: typeof DashboardConfiguracionRoute
   DashboardPerfilRoute: typeof DashboardPerfilRoute
+  DashboardReportesRoute: typeof DashboardReportesRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -322,6 +362,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardClientesRoute: DashboardClientesRoute,
   DashboardConfiguracionRoute: DashboardConfiguracionRoute,
   DashboardPerfilRoute: DashboardPerfilRoute,
+  DashboardReportesRoute: DashboardReportesRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
@@ -337,6 +378,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactoRoute: ContactoRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
+  OfflineRoute: OfflineRoute,
   RegistroRoute: RegistroRoute,
 }
 export const routeTree = rootRouteImport

@@ -14,7 +14,8 @@ export const Route = createFileRoute("/dashboard/perfil")({
   component: PerfilView,
 });
 
-const API_BASE = "/api/v1";
+import { API_URL } from "@/lib/api";
+const API_BASE = API_URL;
 
 function PerfilView() {
   const [loading, setLoading] = useState(true);

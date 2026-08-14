@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { getApiUrl } from "@/lib/api";
 import heroBuilding from "@/assets/hero-building.webp";
 import property1 from "@/assets/property-1.webp";
 import property2 from "@/assets/property-2.webp";
@@ -123,9 +124,27 @@ export interface SiteContentData {
   settings?: {
     aiEnabled: boolean;
   };
+  theme?: {
+    primaryColor?: string;
+    accentColor?: string;
+    titleColor?: string;
+    textColor?: string;
+    backgroundColor?: string;
+    titleSizeFactor?: string; // "small" | "normal" | "large" | "xlarge"
+    bodySizeFactor?: string;  // "small" | "normal" | "large" | "xlarge"
+  };
 }
 
 export const DEFAULT_SITE_CONTENT: SiteContentData = {
+  theme: {
+    primaryColor: "#213B26",
+    accentColor: "#E1B668",
+    titleColor: "#213B26",
+    textColor: "#202020",
+    backgroundColor: "#F5F2EC",
+    titleSizeFactor: "normal",
+    bodySizeFactor: "normal",
+  },
   hero: {
     title: "HOGARES QUE\nTE INSPIRAN",
     subtitle: "Traemos estilo, serenidad y lujo a través de arquitectura inteligente en el corazón de Nueva Guayana.",
@@ -337,8 +356,13 @@ function mergeContent(prev: SiteContentData, json: any): SiteContentData {
   const com = json.comercial     || {};
   const f   = json.faq           || {};
   const s   = json.settings      || {};
+  const t   = json.theme         || {};
 
   return {
+    theme: {
+      ...prev.theme,
+      ...t,
+    },
     hero: {
       ...prev.hero,
       ...h,
@@ -490,6 +514,33 @@ function mergeContent(prev: SiteContentData, json: any): SiteContentData {
   };
 }
 
+function resolveMediaPaths(obj: any): any {
+  if (!obj) return obj;
+  if (typeof obj === 'string') {
+    let normalized = obj;
+    if (obj.startsWith('uploads/')) {
+      normalized = '/' + obj;
+    }
+    if (normalized.startsWith('/uploads/')) {
+      const apiBase = getApiUrl();
+      const base = apiBase.replace(/\/api\/v1$/, '');
+      return `${base}${normalized}`;
+    }
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => resolveMediaPaths(item));
+  }
+  if (typeof obj === 'object') {
+    const res: any = {};
+    for (const key in obj) {
+      res[key] = resolveMediaPaths(obj[key]);
+    }
+    return res;
+  }
+  return obj;
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function SiteContentProvider({ children }: { children: ReactNode }) {
@@ -498,11 +549,12 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
 
   const fetchContent = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/site-content?t=${Date.now()}`);
+      const res = await fetch(getApiUrl(`/api/v1/site-content?t=${Date.now()}`));
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
-          setContent((prev) => mergeContent(prev, json.data));
+          const resolvedData = resolveMediaPaths(json.data);
+          setContent((prev) => mergeContent(prev, resolvedData));
         }
       }
     } catch (e) {
@@ -515,6 +567,31 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchContent();
   }, [fetchContent]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && content?.theme) {
+      const root = document.documentElement;
+      const t = content.theme;
+      if (t.primaryColor) root.style.setProperty("--primary", t.primaryColor);
+      if (t.accentColor) root.style.setProperty("--accent", t.accentColor);
+      if (t.textColor) root.style.setProperty("--foreground", t.textColor);
+      if (t.backgroundColor) root.style.setProperty("--background", t.backgroundColor);
+      if (t.titleColor) root.style.setProperty("--title-color", t.titleColor);
+
+      const scaleMap: Record<string, string> = {
+        small: "0.85",
+        normal: "1",
+        large: "1.15",
+        xlarge: "1.3"
+      };
+      if (t.titleSizeFactor) {
+        root.style.setProperty("--title-scale", scaleMap[t.titleSizeFactor] || "1");
+      }
+      if (t.bodySizeFactor) {
+        root.style.setProperty("--body-scale", scaleMap[t.bodySizeFactor] || "1");
+      }
+    }
+  }, [content?.theme]);
 
   return (
     <SiteContentContext.Provider value={{ content, loading, refetch: fetchContent }}>

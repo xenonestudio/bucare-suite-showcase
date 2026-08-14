@@ -1,19 +1,40 @@
 import { prisma } from '../config/database.config.js';
 import { whatsappService } from './whatsapp.service.js';
+import { sendClientCitaConfirmation, sendSalesNotification } from './email.service.js';
 
 /**
  * Servicio de IA Gemini con Pool de API Keys, Rotación Inteligente, Selección Dinámica de Modelos,
  * Gestión de Nombre de Cliente y Agendamiento Automático de Citas con Resumen Ejecutivo Detallado mediante Function Calling.
  */
 
-const API_KEYS = [
-  'AQ.Ab8RN6LGqcVKgrq7XVj8N_Mb7t2zkLAD3QQNWXY3ePFpfE0bvA',
-  'AQ.Ab8RN6J7Qqv2VUpDOvOvALYTsssf01V3LAZM0aO3KLgLlCxDSQ',
-  'AQ.Ab8RN6KMFJyODHPORpXB9h8h40bXzTl5nZ4kxtNAwlu9pCKQaA',
-  'AQ.Ab8RN6L6K1EwzNtplwT3IV1dUgbUNw-CXd2I6Ym_8Vt12wQT_g',
-];
+// API Keys leídas desde variable de entorno (separadas por coma)
+// Formato en .env: GEMINI_API_KEYS=AIzaXXXXX,AIzaYYYYY,AIzaZZZZZ
+const API_KEYS: string[] = (process.env.GEMINI_API_KEYS || '')
+  .split(',')
+  .map(k => k.trim())
+  .filter(k => k.length > 0);
+
+if (API_KEYS.length === 0) {
+  console.error('[GeminiService] ⚠️  No se encontraron API Keys en GEMINI_API_KEYS del .env. El chat de IA no funcionará.');
+}
 
 let activeKeyIndex = 0;
+
+export function getApiKeysStatus() {
+  return {
+    totalKeys: API_KEYS.length,
+    activeKeyIndex,
+    activeKeyMasked: getActiveKey().substring(0, 8) + '...' + getActiveKey().substring(getActiveKey().length - 6),
+  };
+}
+
+export function setActiveKeyIndex(index: number) {
+  if (index >= 0 && index < API_KEYS.length) {
+    activeKeyIndex = index;
+    return true;
+  }
+  return false;
+}
 
 export interface ChatHistoryMessage {
   sender: 'USER' | 'AI' | 'ADMIN';
@@ -29,6 +50,7 @@ export interface GenerateAiOptions {
   project: 'BUCARE_SUITE' | 'BUCARE_PLAZA';
   systemPrompt?: string;
   selectedModel?: string;
+  autoRotateModel?: boolean;
   history: ChatHistoryMessage[];
   userMessage: string;
 }
@@ -67,13 +89,13 @@ const AGENDAR_CITA_TOOL = {
   functionDeclarations: [
     {
       name: 'agendar_cita',
-      description: 'Crea y agenda automáticamente una cita de visita en la base de datos para Bucare Suite (APARTAMENTO) o Bucare Plaza (LOCAL).',
+      description: 'Crea y agenda automáticamente una cita de visita en la base de datos para Bucare Suite (APARTAMENTO) o Bucare Plaza (LOCAL). SOLO debe invocarse cuando el asistente ya tiene: nombre completo del cliente, correo electrónico VÁLIDO (formato usuario@dominio.com) y número de teléfono.',
       parameters: {
         type: 'OBJECT',
         properties: {
           fecha: {
             type: 'STRING',
-            description: 'Fecha y hora aproximada de la cita en formato YYYY-MM-DD HH:mm (ej. 2026-08-10 10:00 o 2026-08-07 15:30)',
+            description: 'Fecha y hora de la cita en formato YYYY-MM-DD HH:mm (ej. 2026-08-10 10:00)',
           },
           tipoPropiedad: {
             type: 'STRING',
@@ -82,18 +104,26 @@ const AGENDAR_CITA_TOOL = {
           },
           notas: {
             type: 'STRING',
-            description: 'RESUMEN EJECUTIVO COMPLETO DE LA CONVERSACIÓN. Debe detallar: 1) Interés principal y modelo o espacio buscado, 2) Propósito de adquisición (vivienda personal, familiar, local comercial o inversión), 3) Requerimientos o dudas manifestadas, 4) Perfil profesional / laboral / empresa / cargo del cliente si fue mencionado en el chat para evaluar capacidad de adquisición.',
+            description: 'RESUMEN EJECUTIVO de la conversación: interés, propósito, perfil profesional y requerimientos del cliente.',
           },
           nombreCliente: {
             type: 'STRING',
-            description: 'Nombre completo del cliente si es invitado no registrado',
+            description: 'Nombre completo del cliente, obligatorio para invitados no autenticados.',
           },
-          contactoCliente: {
+          emailCliente: {
             type: 'STRING',
-            description: 'Correo electrónico o número de teléfono del cliente',
+            description: 'Correo electrónico del cliente en formato válido (usuario@dominio.com). OBLIGATORIO. El asistente debe solicitarlo y validar que tenga formato correcto antes de llamar esta herramienta.',
+          },
+          telefonoCliente: {
+            type: 'STRING',
+            description: 'Número de teléfono del cliente (con código de país si es posible). OBLIGATORIO para poder contactar al cliente.',
+          },
+          reagendar: {
+            type: 'BOOLEAN',
+            description: 'Si es true, indica que el cliente desea reagendar una cita anterior que ya venció.',
           },
         },
-        required: ['fecha', 'tipoPropiedad', 'notas'],
+        required: ['fecha', 'tipoPropiedad', 'notas', 'emailCliente', 'telefonoCliente'],
       },
     },
   ],
@@ -139,51 +169,142 @@ export async function fetchAvailableGeminiModels(): Promise<GeminiModelInfo[]> {
   }
 
   return [
-    { id: 'gemini-2.0-flash', name: 'models/gemini-2.0-flash', displayName: 'Gemini 2.0 Flash' },
-    { id: 'gemini-2.5-flash', name: 'models/gemini-2.5-flash', displayName: 'Gemini 2.5 Flash' },
-    { id: 'gemini-1.5-flash', name: 'models/gemini-1.5-flash', displayName: 'Gemini 1.5 Flash' },
+    { id: 'gemini-3.5-flash', name: 'models/gemini-3.5-flash', displayName: 'Gemini 3.5 Flash' },
+    { id: 'gemini-3.5-flash-lite', name: 'models/gemini-3.5-flash-lite', displayName: 'Gemini 3.5 Flash Lite' },
+    { id: 'gemini-2.5-pro', name: 'models/gemini-2.5-pro', displayName: 'Gemini 2.5 Pro' },
   ];
 }
 
 /**
- * Maneja la ejecución de la función `agendar_cita` creando la cita en Prisma DB.
+ * Valida formato de correo electrónico.
+ */
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+/**
+ * Maneja la ejecución de la función `agendar_cita` con validación completa:
+ * - Valida email del cliente
+ * - Detecta citas existentes activas o vencidas
+ * - Crea o reagenda la cita según corresponda
  */
 async function executeAgendarCita(args: any, options: GenerateAiOptions): Promise<string> {
   try {
     const { userId, userFullName, userEmail, guestName, project } = options;
 
+    // ── 1. Validar email ──────────────────────────────────────────────────
+    const emailRaw = args.emailCliente || userEmail || '';
+    if (!emailRaw || !isValidEmail(emailRaw)) {
+      return JSON.stringify({
+        status: 'INVALID_EMAIL',
+        mensaje: 'El correo electrónico proporcionado no tiene un formato válido. Por favor verifica que sea correcto (ej. nombre@dominio.com).',
+      });
+    }
+    const emailCliente = emailRaw.trim().toLowerCase();
+    const telefonoCliente = args.telefonoCliente || '';
+
+    // ── 2. Verificar cita existente por email ─────────────────────────────
+    const now = new Date();
+    const citaExistente = await prisma.cita.findFirst({
+      where: {
+        estado: { in: ['PROGRAMADA', 'CONFIRMADA'] },
+        OR: [
+          { notas: { contains: emailCliente } },
+          { cliente: { email: emailCliente } },
+        ],
+      },
+      orderBy: { fecha: 'desc' },
+      include: { cliente: { select: { email: true } } },
+    });
+
+    if (citaExistente && !args.reagendar) {
+      const citaFecha = new Date(citaExistente.fecha);
+      const citaDateFormatted = citaFecha.toLocaleString('es-VE', {
+        timeZone: 'America/Caracas',
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+
+      // Si la cita existente YA VENCIÓ, ofrecer reagendar
+      if (citaFecha < now) {
+        return JSON.stringify({
+          status: 'CITA_VENCIDA',
+          citaId: citaExistente.id,
+          fechaAnterior: citaDateFormatted,
+          mensaje: `Encontramos una cita anterior agendada para el ${citaDateFormatted} que ya venció. ¿Deseas reagendarla para una nueva fecha?`,
+        });
+      }
+
+      // Si la cita existente está VIGENTE
+      return JSON.stringify({
+        status: 'CITA_EXISTENTE',
+        citaId: citaExistente.id,
+        fechaCita: citaDateFormatted,
+        mensaje: `Ya tienes una cita agendada para el ${citaDateFormatted}. Un asesor comercial se pondrá en contacto contigo a la brevedad por tu correo (${emailCliente}) o teléfono (${telefonoCliente || 'no registrado'}).`,
+      });
+    }
+
+    // ── 3. Parsear fecha de la nueva cita ─────────────────────────────────
     let parsedDate = new Date(args.fecha);
     if (isNaN(parsedDate.getTime())) {
       parsedDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
     }
 
+    // ── 4. Resolver clientRefId — crear usuario invitado si no existe ──────
     let clientRefId = userId;
+    const clientName = userFullName || guestName || args.nombreCliente || 'Cliente Chat';
 
     if (!clientRefId) {
-      const clientContact = args.contactoCliente || userEmail;
-      if (clientContact) {
-        const existingUser = await prisma.user.findFirst({
-          where: {
-            OR: [{ email: clientContact }, { phoneNumber: clientContact }],
+      // Buscar usuario existente por email o teléfono
+      const existingUser = await prisma.user.findFirst({
+        where: { OR: [{ email: emailCliente }, ...(telefonoCliente ? [{ phoneNumber: telefonoCliente }] : [])] },
+      });
+
+      if (existingUser) {
+        clientRefId = existingUser.id;
+        // Actualizar teléfono si faltaba
+        if (telefonoCliente && !existingUser.phoneNumber) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: { phoneNumber: telefonoCliente, fullName: existingUser.fullName || clientName },
+          });
+        }
+      } else {
+        // Crear usuario invitado con los datos proporcionados
+        const guestUser = await prisma.user.create({
+          data: {
+            email: emailCliente,
+            fullName: clientName,
+            phoneNumber: telefonoCliente || null,
+            role: 'CLIENTE',
+            passwordHash: null,
+            isActive: true,
           },
         });
-        if (existingUser) {
-          clientRefId = existingUser.id;
-        }
-      }
-      if (!clientRefId) {
-        const firstUser = await prisma.user.findFirst();
-        clientRefId = firstUser?.id || 'invitado-chat';
+        clientRefId = guestUser.id;
+        console.log(`[GeminiService] Usuario invitado creado: ${guestUser.id} (${emailCliente})`);
       }
     }
 
-    const clientName = userFullName || guestName || args.nombreCliente || 'Cliente Chat';
-    const clientContact = userEmail || args.contactoCliente || 'Contacto por Chat';
+    const executiveNotes = (args.notas ? args.notas.trim() : `Cliente: ${clientName}. Agendado vía IA Chat.`)
+      + `\n--- Datos de contacto ---\nEmail: ${emailCliente}\nTeléfono: ${telefonoCliente || 'No proporcionado'}`;
 
-    const executiveNotes = args.notas
-      ? args.notas.trim()
-      : `Cliente: ${clientName} (${clientContact}). Agendado vía IA Chat.`;
+    const dateFormatted = parsedDate.toLocaleString('es-VE', {
+      timeZone: 'America/Caracas',
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
 
+    // ── 5. Si es reagendamiento, cancelar cita anterior ───────────────────
+    if (args.reagendar && citaExistente) {
+      await prisma.cita.update({
+        where: { id: citaExistente.id },
+        data: { estado: 'CANCELADA' },
+      });
+      console.log(`[GeminiService] Cita anterior ${citaExistente.id} cancelada para reagendar.`);
+    }
+
+    // ── 6. Crear la cita ──────────────────────────────────────────────────
     const createdCita = await prisma.cita.create({
       data: {
         clienteId: clientRefId,
@@ -194,39 +315,50 @@ async function executeAgendarCita(args: any, options: GenerateAiOptions): Promis
       },
     });
 
-    const dateFormatted = parsedDate.toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    console.log(`[GeminiService] Cita agendada ID: ${createdCita.id} para ${clientName} (${emailCliente}) fecha: ${dateFormatted}`);
 
-    console.log(`[GeminiService] Cita agendada con éxito ID: ${createdCita.id} para ${clientName} fecha: ${dateFormatted}`);
-
-    // Notificar al cliente vía WhatsApp si hay teléfono disponible
-    const phoneToNotify = args.contactoCliente || userEmail || '';
-    if (phoneToNotify) {
-      whatsappService.sendAppointmentNotification(phoneToNotify, {
+    // Notificar vía WhatsApp si hay teléfono
+    if (telefonoCliente) {
+      whatsappService.sendAppointmentNotification(telefonoCliente, {
         fecha: dateFormatted,
         tipoPropiedad: createdCita.tipoPropiedad,
         notas: executiveNotes,
       }).catch(err => console.error('[GeminiService] Error notificando cita por WhatsApp:', err));
     }
 
+    // Notificar vía Correo Electrónico
+    const emailData = {
+      clienteNombre: clientName,
+      clienteEmail: emailCliente,
+      fechaCita: dateFormatted,
+      tipoPropiedad: createdCita.tipoPropiedad as 'APARTAMENTO' | 'LOCAL',
+      notas: executiveNotes,
+      citaId: createdCita.id,
+    };
+
+    sendClientCitaConfirmation(emailData).catch((e) =>
+      console.error('[GeminiService] Error enviando confirmación al cliente por email:', e)
+    );
+
+    sendSalesNotification(emailData).catch((e) =>
+      console.error('[GeminiService] Error enviando notificación de ventas por email:', e)
+    );
+
     return JSON.stringify({
       status: 'SUCCESS',
       citaId: createdCita.id,
       fechaFormateada: dateFormatted,
       tipoPropiedad: createdCita.tipoPropiedad,
-      mensaje: `Cita registrada con éxito en el sistema para el ${dateFormatted}.`,
+      emailCliente,
+      telefonoCliente,
+      reagendada: !!args.reagendar,
+      mensaje: `Cita ${args.reagendar ? 'reagendada' : 'registrada'} con éxito para el ${dateFormatted}.`,
     });
   } catch (err: any) {
     console.error('[GeminiService] Error al ejecutar agendar_cita:', err);
     return JSON.stringify({
       status: 'ERROR',
-      mensaje: 'Hubo un inconveniente temporal al registrar la cita en la base de datos.',
+      mensaje: 'Hubo un inconveniente temporal al registrar la cita. Por favor intenta de nuevo.',
     });
   }
 }
@@ -250,17 +382,32 @@ Regla: Trátalo amablemente llamándolo "${guestName}". YA CONOCES SU NOMBRE. NO
 Regla: Saluda amablemente al visitante. Si es uno de los primeros mensajes, pregúntale de forma cálida y natural cuál es su nombre para brindarle una atención personalizada. Si el usuario responde sólo un nombre directo (ej. "Carlos" o "Ana"), confirma amablemente: "¿Carlos es tu nombre?".`;
   }
 
-  const citaInstruction = `\n[AGENDAMIENTO AUTOMÁTICO DE CITAS Y GENERACIÓN DE RESUMEN EJECUTIVO DE NOTAS]
-Tienes la capacidad de agendar citas automáticamente en el sistema usando la herramienta 'agendar_cita'.
-Cuando el cliente exprese que desea agendar una cita, visita o inspección a Bucare Suite o Bucare Plaza:
-1. Si falta la fecha u hora deseada o la preferencia de propiedad, pídela amablemente en la conversación.
-2. Al invocar 'agendar_cita', DEBES REDACTAR OBLIGATORIAMENTE EN EL ARGUMENTO 'notas' UN RESUMEN EJECUTIVO COMPLETO Y ESTRUCTURADO de la conversación que analice y sintetice:
-   - Interés principal: Qué tipo de apartamento o local busca, áreas, habitaciones o acabado deseado.
-   - Uso / Propósito: Si es para vivienda propia, para su familia, negocio/local comercial o inversión.
-   - Perfil Profesional / Ocupación: Si el cliente mencionó su trabajo, profesión, negocio, empresa o cargo para evaluar su perfil y capacidad de adquisición.
-   - Requerimientos especiales y dudas: Requerimientos adicionales o inquietudes planteadas por el cliente.`;
+  const citaInstruction = `\n[AGENDAMIENTO AUTOMÁTICO DE CITAS — FLUJO OBLIGATORIO]
+Tienes la capacidad de agendar citas usando la herramienta 'agendar_cita'. Sigue ESTRICTAMENTE este flujo antes de invocarla:
 
-  const fullSystemInstruction = `${basePrompt}\n\n${userContext}${citaInstruction}\nUbicación actual en la web: ${project === 'BUCARE_PLAZA' ? 'Bucare Plaza Comercial' : 'Bucare Suite Apartamentos'}.`;
+PASO 1 — VERIFICAR NOMBRE: Confirma el nombre completo del cliente. Si ya lo conoces por el contexto, no vuelvas a pedirlo.
+PASO 2 — SOLICITAR CORREO ELECTRÓNICO: Pide amablemente el correo electrónico del cliente. Verifica que tenga formato válido (usuario@dominio.com). Si no es válido, indícalo y vuelve a solicitarlo.
+PASO 3 — SOLICITAR TELÉFONO: Solicita un número de teléfono de contacto (con código de país si es posible).
+PASO 4 — SOLICITAR FECHA Y TIPO DE PROPIEDAD: Si no se han mencionado, pregunta por la fecha/hora preferida y el tipo de propiedad (APARTAMENTO o LOCAL).
+PASO 5 — INVOCAR 'agendar_cita': Solo cuando tengas TODOS los datos anteriores, invoca la herramienta con los campos: emailCliente, telefonoCliente, nombreCliente, fecha, tipoPropiedad y notas.
+
+RESPUESTAS SEGÚN RESULTADO DE LA HERRAMIENTA:
+- Si el resultado es CITA_EXISTENTE: Informa al cliente que ya tiene una cita agendada en esa fecha y que un asesor comercial lo contactará a la brevedad por los medios proporcionados.
+- Si el resultado es CITA_VENCIDA: Informa que encontraste una cita anterior que ya venció y pregunta si desea reagendarla. Si acepta, invoca nuevamente 'agendar_cita' con el campo reagendar: true y la nueva fecha.
+- Si el resultado es INVALID_EMAIL: Informa que el correo no es válido y solicita uno correcto.
+- Si el resultado es SUCCESS: Felicita al cliente e informa la fecha confirmada.
+
+NOTAS EN EL CAMPO 'notas': Redacta un RESUMEN EJECUTIVO de la conversación incluyendo:
+- Interés principal (tipo de apartamento/local, áreas, habitaciones).
+- Propósito (vivienda propia, familiar, negocio o inversión).
+- Perfil profesional/ocupación del cliente si fue mencionado.
+- Requerimientos y dudas planteadas.`;
+
+  const optionsTime = { timeZone: 'America/Caracas', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', weekday: 'long' } as const;
+  const currentDateTime = new Date().toLocaleString('es-VE', optionsTime);
+  const timeContext = `\n[CONTEXTO DE TIEMPO REAL]\nLa fecha y hora actual en Venezuela es: ${currentDateTime}. Ten en cuenta esta fecha y hora al agendar citas o hablar sobre el tiempo con el cliente.`;
+
+  const fullSystemInstruction = `${basePrompt}\n\n${userContext}${citaInstruction}${timeContext}\nUbicación actual en la web: ${project === 'BUCARE_PLAZA' ? 'Bucare Plaza Comercial' : 'Bucare Suite Apartamentos'}.`;
 
   const contents: any[] = [
     {
@@ -285,9 +432,20 @@ Cuando el cliente exprese que desea agendar una cita, visita o inspección a Buc
     parts: [{ text: userMessage }],
   });
 
-  const preferredModel = (selectedModel || 'gemini-2.0-flash').replace(/^models\//, '');
-  const fallbackModels = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
-  const models = Array.from(new Set([preferredModel, ...fallbackModels]));
+  let preferredModel = (selectedModel || 'gemini-3.5-flash').replace(/^models\//, '');
+  // Filtrar modelos deprecados que puedan venir de la base de datos
+  const deprecatedModels = ['gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  if (deprecatedModels.includes(preferredModel)) {
+    preferredModel = 'gemini-3.5-flash';
+  }
+
+  // Modelos vigentes
+  const fallbackModels = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-pro'];
+  
+  // Si autoRotateModel está activado, intentamos todos los modelos; si está desactivado, solo el preferido
+  const models = options.autoRotateModel !== false
+    ? Array.from(new Set([preferredModel, ...fallbackModels]))
+    : [preferredModel];
 
   let attempts = 0;
   const maxAttempts = API_KEYS.length * models.length;
@@ -310,7 +468,44 @@ Cuando el cliente exprese que desea agendar una cita, visita o inspección a Buc
       if (response.ok) {
         const data: any = await response.json();
         const candidate = data?.candidates?.[0];
-        const part = candidate?.content?.parts?.[0];
+        const finishReason = candidate?.finishReason;
+        const parts = candidate?.content?.parts;
+        const part = parts?.[0];
+
+        // Detectar respuesta vacía: sin parts, parts vacías, o finishReason que indica error de output
+        const hasValidContent = part?.text || part?.functionCall;
+        const isEmptyOutput =
+          !candidate ||
+          !parts ||
+          parts.length === 0 ||
+          !hasValidContent ||
+          finishReason === 'OTHER' ||
+          finishReason === 'PROHIBITED_CONTENT' ||
+          finishReason === 'BLOCKLIST' ||
+          finishReason === 'SPII';
+
+        if (isEmptyOutput) {
+          console.warn(
+            `[GeminiService] Respuesta vacía o inválida del modelo ${model} (Key:${activeKeyIndex}, finishReason:${finishReason ?? 'none'}). Rotando...`
+          );
+          rotateKey();
+          attempts++;
+          continue;
+        }
+
+        // Si el modelo actual es diferente al preferido y funcionó, y la rotación está activa,
+        // ajustamos el modelo en base de datos para futuras consultas
+        if (options.autoRotateModel !== false && model !== preferredModel) {
+          try {
+            await prisma.aiConfig.update({
+              where: { project },
+              data: { selectedModel: model },
+            });
+            console.log(`[GeminiService] Auto-ajustado modelo activo para ${project} a: ${model}`);
+          } catch (dbErr) {
+            console.error('[GeminiService] Error al actualizar modelo en DB:', dbErr);
+          }
+        }
 
         // 1. Si Gemini decidió invocar la función agendar_cita
         if (part?.functionCall) {
@@ -320,7 +515,14 @@ Cuando el cliente exprese que desea agendar una cita, visita o inspección a Buc
             const resultObj = JSON.parse(resultStr);
 
             if (resultObj.status === 'SUCCESS') {
-              return `¡Excelente! Tu cita para visitar ${project === 'BUCARE_PLAZA' ? 'Bucare Plaza Comercial' : 'Bucare Suite Apartamentos'} ha sido agendada con éxito en nuestro sistema para el ${resultObj.fechaFormateada}.\n\nUn asesor comercial se pondrá en contacto contigo para confirmar los detalles.`;
+              const accion = resultObj.reagendada ? 'reagendada' : 'agendada';
+              return `¡Excelente! Tu cita para visitar ${project === 'BUCARE_PLAZA' ? 'Bucare Plaza Comercial' : 'Bucare Suite Apartamentos'} ha sido ${accion} con éxito en nuestro sistema para el **${resultObj.fechaFormateada}**.\n\nTe contactaremos por:\n📧 Correo: ${resultObj.emailCliente}\n📞 Teléfono: ${resultObj.telefonoCliente || 'No registrado'}\n\nUn asesor comercial se pondrá en contacto contigo para confirmar los detalles. ¡Gracias!`;
+            } else if (resultObj.status === 'CITA_EXISTENTE') {
+              return `${resultObj.mensaje}\n\nSi necesitas cambiar algo, no dudes en indicármelo. 😊`;
+            } else if (resultObj.status === 'CITA_VENCIDA') {
+              return `${resultObj.mensaje}\n\nEscríbeme "Sí, reagenda" o dime la nueva fecha que prefieres.`;
+            } else if (resultObj.status === 'INVALID_EMAIL') {
+              return `${resultObj.mensaje}\n\n¿Podrías proporcionarme tu correo electrónico correcto?`;
             } else {
               return 'Tu solicitud de cita ha sido recibida. Un asesor comercial se pondrá en contacto contigo para confirmar la fecha disponible.';
             }
@@ -332,9 +534,26 @@ Cuando el cliente exprese que desea agendar una cita, visita o inspección a Buc
         if (text) {
           return text.trim();
         }
+
+        // Fallback de seguridad: si llegamos aquí sin texto ni functionCall, rotar
+        console.warn(`[GeminiService] Part sin texto ni functionCall en modelo ${model}. Rotando...`);
+        rotateKey();
       } else {
         const errorText = await response.text();
         console.error(`[GeminiService] Error HTTP ${response.status} de Gemini API (Modelo: ${model}, Key Index: ${activeKeyIndex}):`, errorText);
+
+        // Detectar errores específicos de cuota/output vacío para siempre rotar
+        const isQuotaOrOutputError =
+          response.status === 429 ||
+          response.status === 503 ||
+          errorText.includes('RESOURCE_EXHAUSTED') ||
+          errorText.includes('model output') ||
+          errorText.includes('quota') ||
+          errorText.includes('overloaded');
+
+        if (isQuotaOrOutputError) {
+          console.warn(`[GeminiService] Error de cuota/output detectado. Rotando key...`);
+        }
         rotateKey();
       }
     } catch (err) {
