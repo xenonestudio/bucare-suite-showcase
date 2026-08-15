@@ -13,6 +13,15 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getApiUrl } from "../lib/api";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "../components/ui/sheet";
+import { Copy, Terminal } from "lucide-react";
 
 function NotFoundComponent() {
   return (
@@ -43,6 +52,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
+  const copyError = () => {
+    const errorText = `${error.name}: ${error.message}\n\n${error.stack || "Sin stack trace"}`;
+    navigator.clipboard.writeText(errorText);
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -68,6 +82,36 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             Ir al inicio
           </a>
+        </div>
+
+        <div className="mt-8">
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <Terminal className="h-4 w-4" />
+                <span>Ver consola de desarrollo</span>
+              </button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[80vh] sm:h-[60vh] flex flex-col">
+              <SheetHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-4">
+                <div className="space-y-1 text-left">
+                  <SheetTitle>Consola de Error</SheetTitle>
+                  <SheetDescription>Detalles técnicos para depuración.</SheetDescription>
+                </div>
+                <button
+                  onClick={copyError}
+                  className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent focus:ring-2 focus:ring-ring focus:outline-none"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copiar Error
+                </button>
+              </SheetHeader>
+              <div className="flex-1 overflow-auto rounded-md bg-black p-4 text-left font-mono text-sm text-red-400">
+                <div className="font-bold text-red-500 mb-2">{error.name}: {error.message}</div>
+                <pre className="whitespace-pre-wrap break-all">{error.stack}</pre>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </div>

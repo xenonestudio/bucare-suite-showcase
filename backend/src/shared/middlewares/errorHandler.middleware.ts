@@ -12,17 +12,29 @@ export const globalErrorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  const isOperational = (err as any).isOperational === true;
-  const statusCode = typeof (err as any).statusCode === 'number' ? (err as any).statusCode : 500;
-  const errorCode = typeof (err as any).errorCode === 'string' ? (err as any).errorCode : 'INTERNAL_SERVER_ERROR';
+  let isOperational = (err as any).isOperational === true;
+  let statusCode = typeof (err as any).statusCode === 'number' ? (err as any).statusCode : 500;
+  let errorCode = typeof (err as any).errorCode === 'string' ? (err as any).errorCode : 'INTERNAL_SERVER_ERROR';
   // Attempt to cast to an object that might have 'details' like ValidationError
   const details = (err as any).details || [];
 
-  console.error(`[Error Logged] ${err.name || 'Error'}: ${err.message}`, {
-    stack: err.stack,
-    isOperational,
-    details,
-  });
+  // Catch body-parser JSON SyntaxError
+  if (err instanceof SyntaxError && 'status' in err && (err as any).status === 400 && 'body' in err) {
+    err = new AppError('JSON mal formado en la petición', 400, 'INVALID_JSON');
+    isOperational = true;
+    statusCode = 400;
+    errorCode = 'INVALID_JSON';
+  }
+
+  if (!isOperational || statusCode >= 500) {
+    console.error(`[Error Logged] ${err.name || 'Error'}: ${err.message}`, {
+      stack: err.stack,
+      isOperational,
+      details,
+    });
+  } else {
+    console.warn(`[Client Error] ${statusCode} - ${errorCode}: ${err.message}`);
+  }
 
   const responsePayload = {
     success: false,

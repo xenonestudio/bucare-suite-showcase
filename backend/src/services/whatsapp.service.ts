@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { prisma } from '../config/database.config.js';
 import { generateGeminiResponse } from './gemini.service.js';
+import { AppError } from '../shared/errors/AppError.js';
 
 class WhatsAppService {
   private activeSessionId: string = process.env.WHATSAPP_PHONE || '584247731176';
@@ -103,14 +104,59 @@ class WhatsAppService {
       throw new Error(`Chat con id "${chatId}" no encontrado.`);
     }
 
-    const jid = `${chat.contactPhone}@s.whatsapp.net`;
-
-    // 2. Llamar a la API externa: GET /api/chats/:jid/messages
     const apiToken = process.env.WHATSAPP_API_TOKEN || '';
     const sendUrl = process.env.WHATSAPP_API_URL || 'https://whatsapp.lexsank.xyz/api/messages/send';
     const baseUrl = sendUrl.replace(/\/messages\/send\/?$/, '');
-    const messagesUrl = `${baseUrl}/chats/${encodeURIComponent(jid)}/messages`;
 
+    // 2. Resolver el JID correcto: intentar @s.whatsapp.net primero;
+    //    si no retorna mensajes, buscar en la lista de chats externos
+    //    (la API puede usar @lid en vez de @s.whatsapp.net).
+    const resolveJid = async (): Promise<string> => {
+      const standardJid = `${chat.contactPhone}@s.whatsapp.net`;
+      const testUrl = `${baseUrl}/chats/${encodeURIComponent(standardJid)}/messages`;
+      try {
+        const testResp = await fetch(testUrl, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${apiToken}`, 'Content-Type': 'application/json' },
+        });
+        if (testResp.ok) {
+          const testData = await testResp.json() as unknown[];
+          if (Array.isArray(testData) && testData.length > 0) {
+            console.log(`[WhatsAppService] JID estándar resuelto: ${standardJid}`);
+            return standardJid;
+          }
+        }
+      } catch { /* ignorar, se intenta siguiente opción */ }
+
+      // Buscar en la lista de chats externos por número de teléfono
+      try {
+        const chatsResp = await fetch(`${baseUrl}/chats`, {
+          headers: { 'Authorization': `Bearer ${apiToken}` },
+        });
+        if (chatsResp.ok) {
+          const externalChats = await chatsResp.json() as Array<{ id: string; phone?: string | null; name?: string }>;
+          const phone = chat.contactPhone.replace(/[^0-9]/g, '');
+          // Buscar por phone exacto o por que el id contenga el número
+          const match = externalChats.find(c =>
+            (c.phone && c.phone.replace(/[^0-9]/g, '') === phone) ||
+            c.id.includes(phone)
+          );
+          if (match) {
+            console.log(`[WhatsAppService] JID alternativo encontrado para ${phone}: ${match.id}`);
+            return match.id;
+          }
+        }
+      } catch (err) {
+        console.warn('[WhatsAppService] No se pudo consultar la lista de chats externos:', err);
+      }
+
+      // Fallback al JID estándar aunque esté vacío
+      console.log(`[WhatsAppService] No se encontró JID alternativo, usando estándar: ${standardJid}`);
+      return standardJid;
+    };
+
+    const resolvedJid = await resolveJid();
+    const messagesUrl = `${baseUrl}/chats/${encodeURIComponent(resolvedJid)}/messages`;
     console.log(`[WhatsAppService] Sincronizando mensajes del chat ${chatId} desde: ${messagesUrl}`);
 
     const response = await fetch(messagesUrl, {
@@ -123,7 +169,7 @@ class WhatsAppService {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`API externa retornó error ${response.status}: ${errorText}`);
+      throw new AppError(`API externa retornó error ${response.status}: ${errorText}`, 502, 'EXTERNAL_API_ERROR', true);
     }
 
     const externalMessages = await response.json() as Array<{
@@ -709,7 +755,7 @@ class WhatsAppService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`API externa retornó error ${response.status}: ${errorText}`);
+        throw new AppError(`API externa retornó error ${response.status}: ${errorText}`, 502, 'EXTERNAL_API_ERROR', true);
       }
 
       const externalChats = await response.json() as Array<{

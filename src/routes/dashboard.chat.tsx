@@ -240,7 +240,17 @@ function AdminChatDashboard() {
       fetch(getApiUrl(`/api/v1/whatsapp/chats/${id}/sync-messages`), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
-      }).catch((err) => console.warn("[WA Sync] Error sincronizando mensajes:", err));
+      })
+      .then(async (res) => {
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          console.error("[WA Sync] Error HTTP sincronizando mensajes:", res.status, errData);
+          toast.error("Fallo la sincronización con WhatsApp", {
+            description: errData?.error || errData?.message || `Error ${res.status}: Revisa la consola o los logs del servidor.`
+          });
+        }
+      })
+      .catch((err) => console.warn("[WA Sync] Error de red sincronizando mensajes:", err));
 
       // Cargar chat y mensajes locales (pueden ya tener los externos sincronizados)
       const chatRes = await fetch(getApiUrl("/api/v1/whatsapp/chats"), {
